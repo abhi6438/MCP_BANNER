@@ -1133,10 +1133,32 @@ function generateResponsiveHTML(banners) {
       }
 
       // Plain px values — .bv's scale transform handles proportional resizing.
-      const rules = layerRulesCSS(l).filter(r =>
+      let rules = layerRulesCSS(l).filter(r =>
         !r.startsWith('position:') && !r.startsWith('box-sizing:')
       );
       rules.unshift('display: block');
+
+      // Guard: if master layer is TEXT but the matched layer is not TEXT (e.g. it's a
+      // RECTANGLE or FRAME with the same name), the div holds text content from master.
+      // The non-TEXT layer's background:fill would paint over the text, and its
+      // overflow:hidden (from clipsContent) would clip it. Strip both and copy text
+      // styling from master so the button/label text stays visible.
+      const masterL = bannerMaps[0].byName[cls];
+      if (masterL?.type === 'TEXT' && l.type !== 'TEXT') {
+        rules = rules.filter(r => !r.startsWith('background') && r !== 'overflow: hidden');
+        if (masterL.color)      rules.push(`color: ${masterL.color}`);
+        if (masterL.fontSize)   rules.push(`font-size: ${masterL.fontSize}px`);
+        if (masterL.fontWeight) rules.push(`font-weight: ${masterL.fontWeight}`);
+        if (masterL.fontFamily) rules.push(`font-family: '${masterL.fontFamily}', sans-serif`);
+        if (masterL.textAlign)  rules.push(`text-align: ${masterL.textAlign}`);
+        rules.push('white-space: pre-wrap');
+      }
+
+      // Z-index from layer order in this banner — preserves Figma stacking per size.
+      // Without this, extra layers appended from smaller banners sit on top in DOM
+      // order and can visually cover text layers from the master banner.
+      const zIdx = banners[i].layers.indexOf(l);
+      if (zIdx >= 0) rules.push(`z-index: ${zIdx}`);
 
       // Image layers: CSS background-image (url() can differ per breakpoint; <img> can't)
       if (l.hasImage && l.imageUrl) {

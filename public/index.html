@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banner Generator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #111; min-height: 100vh; }
+  .layout { display: grid; grid-template-columns: 1fr 320px; min-height: 100vh; }
+
+  .preview-panel { padding: 24px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #aaa; border: 1.5px dashed #ddd; border-radius: 12px; min-height: 400px; }
+  .empty-state svg { opacity: 0.3; }
+  .empty-state p { font-size: 14px; }
+  .empty-state small { font-size: 12px; color: #bbb; }
+
+  .metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .metric { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 10px 14px; }
+  .metric-label { font-size: 11px; color: #888; }
+  .metric-val { font-size: 20px; font-weight: 600; color: #111; margin-top: 2px; }
+
+  .preview-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 12px; overflow: hidden; }
+  .preview-toolbar { display: flex; gap: 6px; align-items: center; padding: 10px 14px; border-bottom: 1px solid #f0f0f0; flex-wrap: wrap; }
+  .preview-toolbar span { font-size: 13px; color: #666; flex: 1; }
+  .size-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer; color: #666; background: transparent; border: 1px solid #e0e0e0; }
+  .size-btn:hover { background: #f5f5f5; }
+  .size-btn.active { background: #111; color: #fff; border-color: #111; }
+  .preview-wrap { padding: 16px; background: #e0e0e0; display: flex; justify-content: center; align-items: flex-start; min-height: 160px; overflow: auto; }
+  iframe#preview { border: none; display: block; }
+
+  .code-block { background: #1e1e1e; color: #d4d4d4; border-radius: 10px; padding: 14px; font-family: 'Menlo', 'Consolas', monospace; font-size: 11px; max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; display: none; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-action { font-size: 12px; padding: 7px 14px; border-radius: 8px; cursor: pointer; color: #444; background: #fff; border: 1px solid #ddd; display: flex; align-items: center; gap: 5px; }
+  .btn-action:hover { background: #f5f5f5; }
+
+  .form-panel { background: #fff; border-left: 1px solid #e8e8e8; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
+  .form-header { margin-bottom: 18px; }
+  .form-header h1 { font-size: 16px; font-weight: 600; color: #111; }
+  .form-header p { font-size: 12px; color: #888; margin-top: 3px; }
+
+  .progress { display: flex; gap: 4px; margin-bottom: 18px; }
+  .prog-seg { flex: 1; height: 3px; border-radius: 2px; background: #eee; transition: background 0.3s; }
+  .prog-seg.active { background: #111; }
+  .prog-seg.done { background: #22c55e; }
+
+  .field { margin-bottom: 14px; }
+  label { display: block; font-size: 12px; font-weight: 500; color: #444; margin-bottom: 5px; }
+  input[type="text"], input[type="password"] {
+    width: 100%; padding: 9px 12px; font-size: 13px; border: 1px solid #ddd;
+    border-radius: 8px; outline: none; background: #fafafa; color: #111; transition: border-color 0.2s;
+  }
+  input:focus { border-color: #111; background: #fff; }
+  .hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+  .hint a { color: #0066cc; text-decoration: none; }
+  .hint a:hover { text-decoration: underline; }
+  .divider { height: 1px; background: #f0f0f0; margin: 14px 0; }
+
+  .btn-generate {
+    width: 100%; padding: 11px; font-size: 14px; font-weight: 600;
+    background: #111; color: #fff; border: none; border-radius: 8px;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn-generate:hover { opacity: 0.85; }
+  .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status { font-size: 12px; color: #666; margin-top: 10px; text-align: center; min-height: 20px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .status.error { color: #dc2626; }
+  .status.success { color: #16a34a; }
+
+  .spinner { width: 13px; height: 13px; border: 2px solid #ddd; border-top-color: #111; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .post-actions { display: none; margin-top: 16px; }
+  .post-actions .actions { flex-direction: column; }
+  .post-actions .btn-action { justify-content: center; }
+
+  .badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; margin-left: 6px; font-weight: 500; }
+
+  /* Multi-URL rows */
+  .url-list { display: flex; flex-direction: column; gap: 6px; }
+  .url-row { display: flex; align-items: center; gap: 6px; }
+  .url-row input { flex: 1; min-width: 0; }
+  .size-tag { font-size: 10px; font-weight: 600; padding: 3px 7px; border-radius: 5px;
+              background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;
+              white-space: nowrap; flex-shrink: 0; display: none; }
+  .btn-remove { width: 24px; height: 24px; border: none; border-radius: 5px; background: transparent;
+                cursor: pointer; color: #bbb; font-size: 14px; line-height: 1; flex-shrink: 0; }
+  .btn-remove:hover { background: #fee2e2; color: #dc2626; }
+  .btn-add-url { margin-top: 6px; font-size: 12px; color: #0066cc; background: transparent;
+                 border: 1px dashed #93c5fd; border-radius: 7px; padding: 6px 12px;
+                 cursor: pointer; width: 100%; text-align: center; }
+  .btn-add-url:hover { background: #eff6ff; }
+  .url-row.processing input { border-color: #93c5fd; background: #eff6ff; }
+  .url-row.done input { border-color: #86efac; background: #f0fdf4; }
+  .url-row.error input { border-color: #fca5a5; background: #fef2f2; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- LEFT: Preview -->
+  <div class="preview-panel" id="preview-panel">
+    <div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+      </svg>
+      <p>Banner preview will appear here</p>
+      <small>Fill in the form on the right → click Generate</small>
+    </div>
+  </div>
+
+  <!-- RIGHT: Form -->
+  <div class="form-panel">
+    <div class="form-header">
+      <h1>Banner generator <span class="badge">MVP</span></h1>
+      <p>Figma → HTML in seconds</p>
+      <div style="margin-top:8px;font-size:11px;padding:5px 10px;border-radius:6px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">
+        ⚡ Deterministic HTML — instant, no AI tokens
+      </div>
+    </div>
+
+    <div class="progress">
+      <div class="prog-seg active" id="p1"></div>
+      <div class="prog-seg" id="p2"></div>
+      <div class="prog-seg" id="p3"></div>
+      <div class="prog-seg" id="p4"></div>
+    </div>
+
+    <div class="field">
+      <label>Figma banner URLs <span style="font-weight:400;color:#aaa">— one per size</span></label>
+      <div class="url-list" id="url-list">
+        <div class="url-row">
+          <input type="text" class="url-input" value="https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7446&m=dev" />
+          <span class="size-tag"></span>
+          <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
+        </div>
+        <div class="url-row">
+          <input type="text" class="url-input" value="https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7463&m=dev" />
+          <span class="size-tag"></span>
+          <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
+        </div>
+        <div class="url-row">
+          <input type="text" class="url-input" value="https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7391&m=dev" />
+          <span class="size-tag"></span>
+          <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
+        </div>
+        <div class="url-row">
+          <input type="text" class="url-input" value="https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7417&m=dev" />
+          <span class="size-tag"></span>
+          <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
+        </div>
+        <div class="url-row">
+          <input type="text" class="url-input" value="https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7431&m=dev" />
+          <span class="size-tag"></span>
+          <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
+        </div>
+      </div>
+      <button class="btn-add-url" onclick="addUrl()">+ Add another banner size</button>
+      <div class="hint" style="margin-top:8px;">Select each frame in Figma before copying its URL. Add all sizes you need — a single responsive HTML will be generated.</div>
+    </div>
+
+    <div class="field">
+      <label>Figma access token</label>
+      <input type="password" id="figma-token" placeholder="figd_..." />
+      <div class="hint">Get it at <a href="https://www.figma.com/settings" target="_blank">figma.com/settings</a> → Personal access tokens</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <button class="btn-generate" id="generate-btn" onclick="runPipeline()">
+      Generate responsive HTML
+    </button>
+    <div class="status" id="status-msg"></div>
+
+    <div class="post-actions" id="post-actions">
+      <div class="divider"></div>
+      <div class="actions">
+        <button class="btn-action" onclick="downloadHTML()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download .html
+        </button>
+        <button class="btn-action" onclick="copyHTML()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copy HTML
+        </button>
+        <button class="btn-action" onclick="toggleCode()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          View code
+        </button>
+        <button class="btn-action" onclick="resetTool()" style="color:#dc2626;border-color:#fca5a5;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+          Start over
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let generatedHTML = '';
+let codeVisible = false;
+
+// Persist Figma token across reloads
+(function restoreToken() {
+  const saved = localStorage.getItem('figma_token');
+  if (saved) {
+    const el = document.getElementById('figma-token');
+    if (el) el.value = saved;
+  }
+})();
+
+function saveToken() {
+  const v = document.getElementById('figma-token')?.value?.trim();
+  if (v) localStorage.setItem('figma_token', v);
+}
+
+// AI status check removed — generation is now deterministic (no API needed)
+
+// ── Multi-URL row management ───────────────────────────────────────────────
+function addUrl() {
+  const list = document.getElementById('url-list');
+  const row = document.createElement('div');
+  row.className = 'url-row';
+  row.innerHTML = `<input type="text" class="url-input" placeholder="https://www.figma.com/file/..."/>
+    <span class="size-tag"></span>
+    <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>`;
+  list.appendChild(row);
+  row.querySelector('input').focus();
+}
+
+function removeUrl(btn) {
+  const rows = document.querySelectorAll('.url-row');
+  if (rows.length <= 1) { btn.closest('.url-row').querySelector('input').value = ''; return; }
+  btn.closest('.url-row').remove();
+}
+
+function parseFigmaUrl(url) {
+  try {
+    const u = new URL(url.trim());
+    const parts = u.pathname.split('/');
+    const idx = ['file','design','board'].map(k => parts.indexOf(k)).find(i => i !== -1);
+    const fileKey = idx != null ? parts[idx + 1] : null;
+    const raw = u.searchParams.get('node-id');
+    const nodeId = raw ? raw.replace('-', ':') : null;
+    return { fileKey, nodeId };
+  } catch(e) { return null; }
+}
+
+function setProgress(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('p' + i);
+    el.className = 'prog-seg' + (i < n ? ' done' : i === n ? ' active' : '');
+  }
+}
+
+function setStatus(msg, type) {
+  const el = document.getElementById('status-msg');
+  el.className = 'status' + (type ? ' ' + type : '');
+  el.innerHTML = msg;
+}
+
+async function fetchFigmaData(fileKey, nodeId, token) {
+  const base = 'https://api.figma.com/v1';
+  const endpoint = nodeId
+    ? `${base}/files/${fileKey}/nodes?ids=${encodeURIComponent(nodeId)}`
+    : `${base}/files/${fileKey}`;
+  const res = await fetch(endpoint, { headers: { 'X-Figma-Token': token } });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error('Figma error ' + res.status + (err.err ? ': ' + err.err : ' — check your token'));
+  }
+  return res.json();
+}
+
+function extractDesignData(figmaData, nodeId) {
+  let node;
+  if (nodeId && figmaData.nodes) {
+    node = figmaData.nodes[Object.keys(figmaData.nodes)[0]]?.document;
+  } else {
+    node = figmaData.document?.children?.[0];
+  }
+  if (!node) throw new Error('No frame found — select a frame in Figma and copy its URL with node-id');
+
+  const rootBB = node.absoluteBoundingBox;
+  const rootX = rootBB?.x || 0;
+  const rootY = rootBB?.y || 0;
+  const imageNodeIds = [];
+
+  // Helpers that operate on RAW Figma node data (before transformation)
+  // Used to detect logo/icon components that need to be exported as a single PNG.
+  const _vTypes = new Set(['VECTOR','BOOLEAN_OPERATION','STAR','POLYGON']);
+  function _hasVecDesc(n) {
+    if (_vTypes.has(n.type)) return true;
+    return n.children?.some(_hasVecDesc) || false;
+  }
+  // True if the subtree contains any TEXT node (i.e. this is a content section, not a logo)
+  function _hasTxtDesc(n) {
+    if (n.type === 'TEXT') return true;
+    return n.children?.some(_hasTxtDesc) || false;
+  }
+
+  function traverse(n, depth) {
+    const info = { name: n.name, type: n.type, id: n.id };
+    if (n.absoluteBoundingBox) {
+      info.size = { w: Math.round(n.absoluteBoundingBox.width), h: Math.round(n.absoluteBoundingBox.height) };
+      // Position relative to root frame
+      info.pos = { x: Math.round(n.absoluteBoundingBox.x - rootX), y: Math.round(n.absoluteBoundingBox.y - rootY) };
+    }
+    if (n.fills?.length) {
+      const visibleFills = n.fills.filter(f => f.visible !== false);
+      // TEXT nodes: fills = text color, NOT background. Skip setting info.fill for TEXT.
+      // (Text color is captured separately below as info.color.)
+      if (n.type !== 'TEXT') {
+        const solid = visibleFills.find(f => f.type === 'SOLID');
+        if (solid) {
+          const op = (solid.opacity ?? 1) * (solid.color.a ?? 1);
+          info.fill = `rgba(${Math.round(solid.color.r*255)},${Math.round(solid.color.g*255)},${Math.round(solid.color.b*255)},${op.toFixed(2)})`;
+        }
+      }
+      // Extract full gradient data so AI can generate real CSS gradients
+      const grad = visibleFills.find(f => f.type === 'GRADIENT_LINEAR' || f.type === 'GRADIENT_RADIAL' || f.type === 'GRADIENT_ANGULAR');
+      if (grad) {
+        const stops = (grad.gradientStops || []).map(s => ({
+          color: `rgba(${Math.round(s.color.r*255)},${Math.round(s.color.g*255)},${Math.round(s.color.b*255)},${(s.color.a??1).toFixed(2)})`,
+          pos: Math.round(s.position * 100) + '%'
+        }));
+        let angle = 180;
+        if (grad.gradientHandlePositions?.length >= 2) {
+          const [p0, p1] = grad.gradientHandlePositions;
+          angle = Math.round(Math.atan2(p1.x - p0.x, p0.y - p1.y) * 180 / Math.PI);
+        }
+        info.gradient = { type: grad.type, angle, stops };
+      }
+      if (visibleFills.find(f => f.type === 'IMAGE')) {
+        info.hasImage = true;
+        imageNodeIds.push(n.id);
+      }
+    }
+    // VECTOR / BOOLEAN nodes (icons, logos, shapes) — export as PNG via Figma image API.
+    // We can't render bezier paths in CSS, so we treat them like images.
+    if (n.type === 'VECTOR' || n.type === 'BOOLEAN_OPERATION' || n.type === 'STAR' || n.type === 'POLYGON') {
+      info.hasImage = true;
+      imageNodeIds.push(n.id);
+    }
+
+    // COMPONENT / INSTANCE / GROUP that contains ONLY vector descendants (no text):
+    // export the whole node as a single PNG instead of recursing into children.
+    //
+    // WHY: vector children inside components often have no explicit fill — they
+    // inherit color from a component-level style. The Figma image API resolves
+    // inherited fills when rendering a whole component, but NOT when exporting
+    // individual child nodes (those come back transparent). Exporting the parent
+    // gives one clean PNG that looks exactly like the design.
+    //
+    // IMPORTANT: guard with !_hasTxtDesc so we never export a content section
+    // (which has text + vectors) as a single opaque image — that would collapse
+    // all its individual text layers into one PNG and destroy the layout.
+    if (depth > 0
+        && (n.type === 'COMPONENT' || n.type === 'INSTANCE' || n.type === 'GROUP')
+        && !info.hasImage   // not already marked (e.g. image-fill rectangle inside)
+        && _hasVecDesc(n)
+        && !_hasTxtDesc(n)) {  // only pure-vector subtrees (logos, icons)
+      info.hasImage = true;
+      imageNodeIds.push(n.id);
+      // Don't recurse — the entire component renders as one image
+      return info;
+    }
+    // Stroke / border
+    if (n.strokes?.length) {
+      const s = n.strokes.find(s => s.visible !== false && s.type === 'SOLID');
+      if (s) {
+        info.stroke = {
+          color: `rgba(${Math.round(s.color.r*255)},${Math.round(s.color.g*255)},${Math.round(s.color.b*255)},${(s.color.a??1).toFixed(2)})`,
+          width: n.strokeWeight || 1,
+          align: n.strokeAlign || 'INSIDE'
+        };
+      }
+    }
+    if (n.cornerRadius) info.borderRadius = n.cornerRadius;
+    if (n.rectangleCornerRadii) info.cornerRadii = n.rectangleCornerRadii; // [tl,tr,br,bl]
+    if (n.opacity !== undefined && n.opacity !== 1) info.opacity = parseFloat(n.opacity.toFixed(2));
+    // Mark clipping frames so AI adds overflow:hidden
+    if ((n.type === 'FRAME' || n.type === 'COMPONENT' || n.type === 'INSTANCE') && n.clipsContent) info.clipsContent = true;
+    if (n.type === 'TEXT') {
+      info.text = n.characters;
+      if (n.style) {
+        info.fontSize = n.style.fontSize;
+        info.fontFamily = n.style.fontFamily;
+        info.fontWeight = n.style.fontWeight;
+        info.textAlign = n.style.textAlignHorizontal?.toLowerCase() || 'left';
+        info.lineHeight = n.style.lineHeightPx ? Math.round(n.style.lineHeightPx) : null;
+        info.letterSpacing = n.style.letterSpacing ? parseFloat(n.style.letterSpacing.toFixed(2)) : null;
+        info.italic = n.style.italic || false;
+        info.textDecoration = n.style.textDecoration || null;
+        info.textCase = n.style.textCase || null; // UPPER / LOWER / TITLE
+        info.textOverflow = n.style.textTruncation === 'ENDING_ELLIPSIS' ? 'ellipsis' : null;
+      }
+      const textFill = n.fills?.find(f => f.visible !== false && f.type === 'SOLID');
+      if (textFill) {
+        const c = textFill.color;
+        info.color = `rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},${(c.a??1).toFixed(2)})`;
+      }
+      // Mixed text styles: bold runs, underlined links, size changes within one text node.
+      // Figma stores these as characterStyleOverrides (per-char style index) + styleOverrideTable.
+      if (n.characterStyleOverrides?.some(i => i !== 0) && n.styleOverrideTable) {
+        info.styleOverrides = n.characterStyleOverrides; // array of style indices, one per char
+        info.styleTable = {};
+        for (const [key, s] of Object.entries(n.styleOverrideTable)) {
+          const o = {};
+          if (s.fontWeight     !== undefined) o.fontWeight     = s.fontWeight;
+          if (s.fontSize       !== undefined) o.fontSize       = s.fontSize;
+          if (s.italic         !== undefined) o.italic         = s.italic;
+          if (s.textDecoration !== undefined) o.textDecoration = s.textDecoration;
+          if (s.letterSpacing  !== undefined) o.letterSpacing  = parseFloat(s.letterSpacing.toFixed(2));
+          if (s.fills?.[0]?.color) {
+            const c = s.fills[0].color;
+            o.color = `rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},${(c.a??1).toFixed(2)})`;
+          }
+          // Figma hyperlinks: stored as hyperlink.url in character style overrides
+          if (s.hyperlink?.url) o.hyperlink = s.hyperlink.url;
+          // Superscript / subscript via OpenType features or explicit baseline
+          if (s.openTypeFeatures?.SUPS) o.verticalAlign = 'super';
+          if (s.openTypeFeatures?.SUBS) o.verticalAlign = 'sub';
+          if (Object.keys(o).length) info.styleTable[key] = o;
+        }
+        // Whole-node hyperlink (when entire text node is linked, not just a run)
+        if (n.style?.hyperlink?.url) info.hyperlink = n.style.hyperlink.url;
+      }
+    }
+    if (n.children?.length && depth < 8) {
+      info.children = n.children.slice(0, 60).map(c => traverse(c, depth + 1));
+    }
+    return info;
+  }
+
+  const tree = traverse(node, 0);
+  const bb = node.absoluteBoundingBox;
+  const size = bb ? `${Math.round(bb.width)}x${Math.round(bb.height)}` : null;
+  let layerCount = 0;
+  function count(n) { layerCount++; if (n.children) n.children.forEach(count); }
+  count(node);
+  return { tree, size, layerCount, imageNodeIds };
+}
+
+async function fetchFigmaImages(fileKey, nodeIds, token) {
+  if (!nodeIds.length) return {};
+  try {
+    const res = await fetch('/api/figma-images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileKey, nodeIds, token })
+    });
+    const data = await res.json();
+    return data.images || {};
+  } catch(e) {
+    console.warn('Image fetch failed:', e.message);
+    return {};
+  }
+}
+
+// Inject real image URLs into the design tree
+function injectImageUrls(tree, imageMap) {
+  if (tree.hasImage && tree.id && imageMap[tree.id]) {
+    tree.imageUrl = imageMap[tree.id];
+  }
+  if (tree.children) tree.children.forEach(c => injectImageUrls(c, imageMap));
+}
+
+// ─── DETERMINISTIC HTML GENERATION ──────────────────────────────────────────
+// No AI needed. We convert Figma data directly to HTML/CSS.
+// This is faster, cheaper, and always pixel-accurate.
+
+const WEB_SAFE_FONTS = new Set([
+  'Arial','Helvetica','Georgia','Times New Roman','Courier New',
+  'Verdana','Tahoma','Trebuchet MS','Impact','Comic Sans MS'
+]);
+
+function gradientCSS(grad) {
+  if (!grad || !grad.stops || !grad.stops.length) return 'transparent';
+  const stops = grad.stops.map(s => `${s.color} ${s.pos}`).join(', ');
+  if (grad.type === 'GRADIENT_LINEAR') return `linear-gradient(${grad.angle || 180}deg, ${stops})`;
+  if (grad.type === 'GRADIENT_RADIAL') return `radial-gradient(circle, ${stops})`;
+  return `linear-gradient(180deg, ${stops})`;
+}
+
+function escapeHTML(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Render text content, handling mixed styles within one Figma text node.
+// Returns the right <a> attributes for a hyperlink based on the visible link text.
+//   "see details"                    → data-terms-link  (opens terms modal)
+//   "credit card terms and conditions" → target="_blank" (opens in new tab)
+//   anything else                    → target="_blank" rel="noopener"
+function linkAttrs(href, plainText) {
+  const t = plainText.trim().toLowerCase();
+  const h = escapeHTML(href);
+  if (t === 'see details' || t === 'see details.')
+    return `href="${h}" data-terms-link`;
+  return `href="${h}" target="_blank" rel="noopener"`;
+}
+
+// Supports: mixed weights/sizes/colors, underline, hyperlinks (<a>), superscript.
+// regSpan(decls[]) → CSS class name so spans use classes instead of inline style="".
+function renderTextContent(l, regSpan) {
+  const text = l.text || '';
+
+  // Plain text node — no per-character style overrides
+  if (!l.styleOverrides || !l.styleTable || !text.length) {
+    const escaped = escapeHTML(text);
+    // Whole-node hyperlink (entire text node linked in Figma)
+    return l.hyperlink
+      ? `<a ${linkAttrs(l.hyperlink, text)}>${escaped}</a>`
+      : escaped;
+  }
+
+  const overrides = l.styleOverrides;
+  const table     = l.styleTable;
+
+  // Build runs: consecutive characters sharing the same style-override index
+  const runs = [];
+  let start = 0, curIdx = overrides[0] || 0;
+  for (let i = 1; i <= text.length; i++) {
+    const idx = (i < overrides.length ? overrides[i] : 0) || 0;
+    if (idx !== curIdx || i === text.length) {
+      runs.push({ chars: text.slice(start, i), idx: curIdx });
+      curIdx = idx; start = i;
+    }
+  }
+
+  return runs.map(run => {
+    const s  = run.idx ? (table[run.idx] || {}) : {};
+    const sp = [];
+
+    // Span styles use em/unitless where possible so they inherit the parent
+    // layer's cqi-scaled font-size and scale smoothly with the container.
+    if (s.fontWeight !== undefined) sp.push(`font-weight:${s.fontWeight}`);
+    // font-size as em relative to the layer's base font-size (inherits cqi scaling)
+    if (s.fontSize !== undefined && l.fontSize)
+      sp.push(`font-size:${(s.fontSize / l.fontSize).toFixed(4)}em`);
+    else if (s.fontSize !== undefined)
+      sp.push(`font-size:${s.fontSize}px`);
+    if (s.italic !== undefined) sp.push(`font-style:${s.italic ? 'italic' : 'normal'}`);
+    if (s.color)                sp.push(`color:${s.color}`);
+    // letter-spacing as em relative to the span's effective font-size
+    if (s.letterSpacing !== undefined && s.letterSpacing !== 0) {
+      const spanFs = s.fontSize || l.fontSize || 16;
+      sp.push(`letter-spacing:${(s.letterSpacing / spanFs).toFixed(4)}em`);
+    }
+    if (s.verticalAlign) sp.push(`vertical-align:${s.verticalAlign};font-size:0.75em`);
+    if (s.textDecoration) {
+      const td = { UNDERLINE: 'underline', STRIKETHROUGH: 'line-through' }[s.textDecoration]
+               || s.textDecoration.toLowerCase();
+      sp.push(`text-decoration:${td}`);
+    }
+
+    const escaped = escapeHTML(run.chars);
+
+    // Build the styled inner content (span with class, or plain text)
+    let inner;
+    if (!sp.length)   inner = escaped;
+    else if (regSpan) inner = `<span class="${regSpan(sp)}">${escaped}</span>`;
+    else              inner = `<span style="${sp.join(';')}">${escaped}</span>`;
+
+    // Wrap in <a> when this specific run has a Figma hyperlink
+    if (s.hyperlink) {
+      inner = `<a ${linkAttrs(s.hyperlink, run.chars)}>${inner}</a>`;
+    }
+
+    return inner;
+  }).join('');
+}
+
+// Walk the Figma tree and collect all visually renderable nodes as a flat list.
+// Root node (depth=0) is skipped as a layer but its fill becomes the container background.
+function flattenLayers(tree) {
+  const rootFill     = tree.fill     || null;
+  const rootGradient = tree.gradient || null;
+  const layers = [];
+
+  function walk(node, depth) {
+    if (depth > 0 && node.pos && node.size) {
+      const t = node.type;
+      const hasVisual = node.fill || node.gradient || node.hasImage || node.imageUrl ||
+                        node.stroke || t === 'TEXT' || t === 'VECTOR' ||
+                        t === 'RECTANGLE' || t === 'ELLIPSE' || t === 'POLYGON' || t === 'STAR';
+      if (hasVisual) {
+        const keep = ['name','type','pos','size','fill','gradient','stroke','borderRadius',
+                      'cornerRadii','opacity','clipsContent','hasImage','imageUrl',
+                      'text','fontSize','fontFamily','fontWeight','textAlign','lineHeight',
+                      'letterSpacing','italic','textDecoration','textCase','textOverflow','color',
+                      'hyperlink','styleOverrides','styleTable'];
+        const flat = {};
+        keep.forEach(k => { if (node[k] !== undefined && node[k] !== null && node[k] !== '') flat[k] = node[k]; });
+        layers.push(flat);
+      }
+    }
+    if (node.children) node.children.forEach(c => walk(c, depth + 1));
+  }
+
+  walk(tree, 0);
+  // Do NOT sort — layers are already in Figma's painter order (depth-first traversal).
+  // DOM order handles stacking: later elements appear on top of earlier ones.
+  // Sorting by per-parent zIndex breaks this: button text (zIndex=1) would sort
+  // before the button background (zIndex=5), hiding the text under the white box.
+  return { layers, rootFill, rootGradient };
+}
+
+// ── Shared helpers for CSS-class-based HTML generation ───────────────────────
+
+// Build { fontFamily → Set<weight> } for a layer list
+function buildFontMap(layers) {
+  const map = {};
+  layers.forEach(l => {
+    if (!l.fontFamily || WEB_SAFE_FONTS.has(l.fontFamily)) return;
+    if (!map[l.fontFamily]) map[l.fontFamily] = new Set();
+    map[l.fontFamily].add(l.fontWeight || 400);
+    if (l.styleTable) Object.values(l.styleTable).forEach(s => {
+      if (s.fontWeight) map[l.fontFamily].add(s.fontWeight);
+    });
+  });
+  return map;
+}
+
+// Build <link> tag for Google Fonts (spaces as +, only used weights)
+function buildFontLink(fontMap) {
+  const params = Object.entries(fontMap).map(([f, ws]) =>
+    `family=${f.replace(/ /g, '+')}:wght@${[...ws].sort((a, b) => a - b).join(';')}`
+  ).join('&');
+  return params
+    ? `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?${params}&display=swap">`
+    : '';
+}
+
+// Return an array of CSS declarations for one layer.
+// designWidth — when provided, ALL pixel dimensions become calc(v / W * 100cqi)
+//   so the entire layout scales smoothly as the container resizes (no transform:scale).
+//   Both horizontal AND vertical values use cqi because the container has a fixed
+//   aspect-ratio, so width drives height proportionally.
+// When designWidth is null, plain px values are returned (single-banner compat).
+function layerRulesCSS(l, designWidth = null) {
+  // Convert a raw Figma pixel value to either cqi or px
+  const u = v => designWidth
+    ? `calc(${v} / ${designWidth} * 100cqi)`
+    : `${v}px`;
+
+  const r = [
+    'position: absolute',
+    'box-sizing: border-box',
+    `left: ${u(l.pos?.x ?? 0)}`,
+    `top: ${u(l.pos?.y ?? 0)}`,
+    `width: ${u(l.size?.w ?? 0)}`,
+    `height: ${u(l.size?.h ?? 0)}`,
+  ];
+
+  // Background — skip TEXT (color = text fill) and image nodes (fill baked into PNG)
+  if (l.type !== 'TEXT' && !l.hasImage) {
+    if (l.gradient) r.push(`background: ${gradientCSS(l.gradient)}`);
+    else if (l.fill) r.push(`background: ${l.fill}`);
+  }
+
+  if (l.cornerRadii?.length === 4)
+    r.push(`border-radius: ${l.cornerRadii.map(v => u(v)).join(' ')}`);
+  else if (l.borderRadius)
+    r.push(`border-radius: ${u(l.borderRadius)}`);
+
+  if (l.opacity !== undefined && l.opacity !== 1) r.push(`opacity: ${l.opacity}`);
+
+  if (l.stroke) {
+    const sw = u(l.stroke.width);
+    if (l.stroke.align === 'OUTSIDE') r.push(`outline: ${sw} solid ${l.stroke.color}`);
+    else r.push(`border: ${sw} solid ${l.stroke.color}`);
+  }
+
+  if (l.clipsContent) r.push('overflow: hidden');
+
+  if (l.type === 'TEXT') {
+    if (l.color)      r.push(`color: ${l.color}`);
+    if (l.fontSize)   r.push(`font-size: ${u(l.fontSize)}`);
+    if (l.fontWeight) r.push(`font-weight: ${l.fontWeight}`);
+    if (l.fontFamily) r.push(`font-family: '${l.fontFamily}', sans-serif`);
+    if (l.textAlign)  r.push(`text-align: ${l.textAlign}`);
+    if (l.lineHeight) r.push(`line-height: ${u(l.lineHeight)}`);
+    // letter-spacing scales with font-size
+    if (l.letterSpacing && l.letterSpacing !== 0)
+      r.push(`letter-spacing: ${u(l.letterSpacing)}`);
+    if (l.italic)     r.push('font-style: italic');
+    if (l.textDecoration) {
+      const td = { UNDERLINE: 'underline', STRIKETHROUGH: 'line-through' }[l.textDecoration]
+               || l.textDecoration.toLowerCase();
+      r.push(`text-decoration: ${td}`);
+    }
+    if      (l.textCase === 'UPPER') r.push('text-transform: uppercase');
+    else if (l.textCase === 'LOWER') r.push('text-transform: lowercase');
+    else if (l.textCase === 'TITLE') r.push('text-transform: capitalize');
+    if (l.textOverflow === 'ellipsis')
+      r.push('white-space: nowrap', 'overflow: hidden', 'text-overflow: ellipsis');
+    else
+      r.push('white-space: pre-wrap', 'overflow: hidden');
+  }
+  return r;
+}
+
+// Return the inner HTML for one layer (image or text content).
+// regSpan — optional function(decls[]) → class name for mixed-text span styles.
+const _vcTypes = new Set(['VECTOR','BOOLEAN_OPERATION','STAR','POLYGON','COMPONENT','INSTANCE','GROUP']);
+function layerInner(l, regSpan) {
+  if (l.hasImage && l.imageUrl) {
+    const fit = _vcTypes.has(l.type) ? 'contain' : 'cover';
+    return `<img src="${l.imageUrl}" style="width:100%;height:100%;object-fit:${fit};display:block" alt="">`;
+  }
+  if (l.type === 'TEXT' && l.text) return renderTextContent(l, regSpan);
+  return '';
+}
+
+// ── Single-banner HTML — fluid cqi layout, no transform:scale, no JS ─────────
+// Every pixel value from Figma becomes calc(v / W * 100cqi).
+// The container has aspect-ratio: W/H so height is always proportional.
+// Result: smooth scaling at any container width — text reflows, fonts shrink,
+// everything moves proportionally — exactly like a proper fluid layout.
+function generateBannerHTML(layers, rootFill, rootGradient, w, h) {
+  const fontMap = buildFontMap(layers);
+  const fontLink = buildFontLink(fontMap);
+
+  const spanMap = {};
+  function regSpan(decls) {
+    const key = decls.slice().sort().join(';');
+    if (!spanMap[key]) spanMap[key] = `s${Object.keys(spanMap).length}`;
+    return spanMap[key];
+  }
+
+  // HTML first — so regSpan collects all span classes before CSS is written
+  const layerHTML = layers.map((l, i) =>
+    `  <div class="l${i}">${layerInner(l, regSpan)}</div>`
+  ).join('\n');
+
+  let bgRule = '';
+  if (rootGradient) bgRule = `background: ${gradientCSS(rootGradient)};`;
+  else if (rootFill) bgRule = `background: ${rootFill};`;
+
+  // Pass designWidth=w so all px values become calc(v / w * 100cqi)
+  const layerCSS = layers.map((l, i) => `.l${i} { ${layerRulesCSS(l, w).join('; ')} }`).join('\n');
+  const spanCSS  = Object.entries(spanMap).map(([k, cls]) => `.${cls} { ${k} }`).join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+${fontLink}
+<!-- fonts: ${Object.keys(fontMap).join(', ') || 'web-safe only'} -->
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: transparent; }
+
+/* Named container — gives cqi its reference size */
+.bc-outer {
+  container-type: inline-size;
+  container-name: bco;
+  width: 100%;
+}
+
+/* Banner stage — cqi reference + aspect-ratio keeps height proportional to width */
+.bc {
+  width: 100%;
+  aspect-ratio: ${w} / ${h};
+  position: relative;
+  overflow: hidden;
+  ${bgRule}
+}
+
+/* All layers — positioned with cqi units so they scale with container width */
+.bc > div { position: absolute; box-sizing: border-box; }
+
+${layerCSS}
+
+/* Span classes — em units so they inherit the layer's cqi-scaled font-size */
+${spanCSS}
+
+.terms-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  font-family: 'Montserrat', sans-serif;
+}
+.terms-modal.is-open {
+  display: block;
+}
+.terms-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+.terms-modal__dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92vw, 900px);
+  height: min(90vh, 720px);
+  background: #FFF;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.terms-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #E5E7EB;
+  background: #FAF7F5;
+  flex-shrink: 0;
+}
+.terms-modal__title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #132122;
+  margin: 0;
+}
+.terms-modal__close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: #132122;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+.terms-modal__close:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+.terms-modal__body {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  background: #FFF;
+}
+.terms-modal__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+</style>
+</head>
+<body>
+<div class="bc-outer">
+  <div class="bc">
+${layerHTML}
+  </div>
+  <div id="terms-modal" class="terms-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="terms-modal-title">
+    <div class="terms-modal__backdrop" data-terms-close></div>
+    <div class="terms-modal__dialog" role="document">
+      <div class="terms-modal__header">
+        <h2 id="terms-modal-title" class="terms-modal__title">Terms &amp; Conditions</h2>
+        <button type="button" class="terms-modal__close" aria-label="Close" data-terms-close>&#xD7;</button>
+      </div>
+      <div class="terms-modal__body">
+        <iframe class="terms-modal__frame" title="Terms and Conditions" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+<script> (function () { var modal = document.getElementById('terms-modal'); if (!modal) return; var iframe = modal.querySelector('.terms-modal__frame'); function openTermsModal(url) { iframe.setAttribute('src', url); modal.classList.add('is-open'); modal.setAttribute('aria-hidden', 'false'); } function closeTermsModal() { modal.classList.remove('is-open'); modal.setAttribute('aria-hidden', 'true'); iframe.setAttribute('src', 'about:blank'); } document.addEventListener('click', function (e) { var target = e.target; if (!target || typeof target.closest !== 'function') return; var link = target.closest('a[data-terms-link]'); if (!link) return; e.preventDefault(); openTermsModal(link.href); }); modal.addEventListener('click', function (e) { var t = e.target; if (t && t.nodeType === 1 && t.hasAttribute('data-terms-close')) closeTermsModal(); }); document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal.classList.contains('is-open')) closeTermsModal(); }); })(); <\/script>
+</body>
+</html>`;
+}
+
+function renderPreview(html, banners, layerCount, elapsed) {
+  const panel = document.getElementById('preview-panel');
+  const sizeList = banners.map(b => b.size).join(', ');
+
+  // Size buttons — each stores exact banner dimensions so height is always correct
+  const sizeBtns = banners.map((b, i) =>
+    `<button class="size-btn${i===0?' active':''}" onclick="setPreviewSize(this,${b.w},${b.h})">${b.size}</button>`
+  ).join('');
+
+  const first = banners[0];
+  panel.innerHTML = `
+    <div class="metric-row">
+      <div class="metric"><div class="metric-label">Sizes</div><div class="metric-val" style="font-size:13px">${sizeList}</div></div>
+      <div class="metric"><div class="metric-label">Layers</div><div class="metric-val">${layerCount}</div></div>
+      <div class="metric"><div class="metric-label">Time</div><div class="metric-val">${elapsed}s</div></div>
+    </div>
+    <div class="preview-card">
+      <div class="preview-toolbar">
+        <span>Preview</span>
+        ${sizeBtns}
+      </div>
+      <div class="preview-wrap">
+        <iframe id="preview" style="width:${first.w}px;height:${first.h}px;"></iframe>
+      </div>
+    </div>
+    <div class="code-block" id="code-block"></div>
+  `;
+
+  document.getElementById('preview').srcdoc = html;
+  document.getElementById('code-block').textContent = html;
+}
+
+function setPreviewSize(btn, w, h) {
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const iframe = document.getElementById('preview');
+  if (iframe) {
+    // Set exact design dimensions — the iframe's container matches the banner's
+    // @container query breakpoint exactly, so the right layout fires every time.
+    iframe.style.width  = w + 'px';
+    iframe.style.height = h + 'px';
+  }
+}
+
+// ── Process a single Figma URL into banner data ──────────────────────────────
+async function processBannerUrl(url, token) {
+  const parsed = parseFigmaUrl(url);
+  if (!parsed?.fileKey) throw new Error('Could not parse Figma URL');
+  const figmaData = await fetchFigmaData(parsed.fileKey, parsed.nodeId, token);
+  const designData = extractDesignData(figmaData, parsed.nodeId);
+  if (designData.imageNodeIds.length > 0) {
+    const imageMap = await fetchFigmaImages(parsed.fileKey, designData.imageNodeIds, token);
+    injectImageUrls(designData.tree, imageMap);
+  }
+  const sizeHint = designData.size || '300x250';
+  const [w, h] = sizeHint.split('x').map(Number);
+  const { layers, rootFill, rootGradient } = flattenLayers(designData.tree);
+  return { w, h, size: sizeHint, layers, rootFill, rootGradient };
+}
+
+// ── Responsive HTML — single design div, JS swaps variant on resize ──────────
+//
+// Structure:
+//   <style>  all CSS for every variant (.v0, .v0 .l0, .v1, .v1 .l0, …) + span classes
+// ── Multi-banner: ONE div, CSS @container repositions layers per size ─────────
+//
+// Structure (HTML):
+//   <div class="bc-outer">  ← named cqi container
+//     <div class="bc">       ← banner stage (height set by @container)
+//       <div class="bv">     ← ONE design div — all sizes share this element
+//         <div class="l-syw-logo"></div>      ← image layers: empty div, CSS bg-image
+//         <div class="l-headline"><span>…     ← text layers: content in HTML once
+//         …
+//
+// How it works:
+//   Figma layer NAMES are used as CSS classes ("SYW Logo" → "l-syw-logo").
+//   Layers from every banner that share a name are treated as THE SAME element.
+//   Each @container breakpoint repositions + resizes those elements for that size.
+//   Layers absent in a particular size get `display:none` for that breakpoint.
+//   Images → CSS background-image (CSS can swap url() per breakpoint; <img> can't).
+//   Scale = tan(atan2(100cqi, designWidthPx)) stretches .bv to fill the container.
+//
+// Result: ONE <div class="bv"> in the HTML; zero JavaScript.
+function generateResponsiveHTML(banners) {
+  // ── Span style registry ────────────────────────────────────────────────────
+  const spanMap = {};
+  function regSpan(decls) {
+    const key = decls.slice().sort().join(';');
+    if (!spanMap[key]) spanMap[key] = `s${Object.keys(spanMap).length}`;
+    return spanMap[key];
+  }
+
+  // ── Layer class naming ─────────────────────────────────────────────────────
+  // Figma layer names → safe CSS class segment (prefix "l-" added below).
+  function sanitizeName(raw) {
+    return (raw || 'layer')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || 'layer';
+  }
+
+  // Assign a unique CSS class to every layer in one banner.
+  // Duplicated names within the same banner get a numeric suffix.
+  function assignClasses(layers) {
+    const counts = {};
+    return layers.map(l => {
+      const base = 'l-' + sanitizeName(l.name);
+      counts[base] = (counts[base] || 0) + 1;
+      return counts[base] === 1 ? base : `${base}-${counts[base]}`;
+    });
+  }
+
+  // ── Build per-banner class lists and lookup maps ───────────────────────────
+  const bannerClasses = banners.map(b => assignClasses(b.layers));
+
+  // Master = largest banner — defines canonical layer order in the HTML
+  const masterClasses = bannerClasses[0];
+  const masterLayers  = banners[0].layers;
+
+  // Per-banner dual lookup:
+  //   byName:      class → layer  (primary, Figma-name-based)
+  //   byText:      text  → layer  (exact trim match)
+  //   byTextNorm:  normalized text → layer  (case+whitespace insensitive)
+  //   byTextAlpha: letters+digits only → layer  (strips spaces/punctuation/newlines)
+  // This handles renamed layers and minor text differences (casing, spaces, newlines) across sizes.
+  const normText  = t => t.toLowerCase().replace(/\s+/g, ' ').trim();
+  const alphaText = t => t.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 80);
+  const bannerMaps = banners.map((b, bi) => {
+    const byName = {}, byText = {}, byTextNorm = {}, byTextAlpha = {};
+    b.layers.forEach((l, i) => {
+      byName[bannerClasses[bi][i]] = l;
+      if (l.type === 'TEXT' && l.text) {
+        const key   = l.text.trim().slice(0, 120);
+        const norm  = normText(l.text).slice(0, 120);
+        const alpha = alphaText(l.text);
+        if (!byText[key])       byText[key]       = l;
+        if (!byTextNorm[norm])  byTextNorm[norm]  = l;
+        if (!byTextAlpha[alpha]) byTextAlpha[alpha] = l;
+      }
+    });
+    return { byName, byText, byTextNorm, byTextAlpha };
+  });
+
+  // Set of text strings already covered by a master TEXT layer (exact + normalized).
+  // Smaller-banner TEXT layers whose text matches a master layer are NOT added as
+  // separate DOM elements — they're resolved via the text-content fallback at CSS time.
+  const masterTextSet      = new Set(masterLayers.filter(l => l.type === 'TEXT' && l.text).map(l => l.text.trim().slice(0, 120)));
+  const masterTextSetNorm  = new Set(masterLayers.filter(l => l.type === 'TEXT' && l.text).map(l => normText(l.text).slice(0, 120)));
+  const masterTextSetAlpha = new Set(masterLayers.filter(l => l.type === 'TEXT' && l.text).map(l => alphaText(l.text)));
+
+  // Union of all layer classes: master order first, then genuinely unique extras
+  // (image/rect layers from smaller banners that have no name match in master).
+  const allClasses = [...masterClasses];
+  bannerClasses.slice(1).forEach((classes, si) => {
+    const bi = si + 1;
+    classes.forEach((cls, j) => {
+      if (allClasses.includes(cls)) return;  // already matched by name
+      const l = banners[bi].layers[j];
+      // Skip TEXT layers whose content already exists in master — text fallback handles them
+      if (l.type === 'TEXT' && l.text) {
+        const exact = l.text.trim().slice(0, 120);
+        const norm  = normText(l.text).slice(0, 120);
+        const alpha = alphaText(l.text);
+        if (masterTextSet.has(exact) || masterTextSetNorm.has(norm) || masterTextSetAlpha.has(alpha)) return;
+      }
+      allClasses.push(cls);  // genuinely new layer (e.g. second logo in 250×250)
+    });
+  });
+
+  // Extra layers (truly unique to smaller banners): grab content for HTML generation
+  const extraLayerContent = {};
+  allClasses.forEach(cls => {
+    if (!bannerMaps[0].byName[cls]) {
+      bannerMaps.slice(1).find(m => m.byName[cls] && (extraLayerContent[cls] = m.byName[cls]));
+    }
+  });
+
+  // ── Build HTML: ONE div, all semantic layers ───────────────────────────────
+  // Text content stays in HTML (same copy across all sizes).
+  // Image layers are empty divs — CSS sets background-image per breakpoint.
+  // IMPORTANT: run HTML generation before CSS so regSpan collects all span classes.
+  const layerDivs = allClasses.map(cls => {
+    const l = bannerMaps[0].byName[cls] ?? extraLayerContent[cls];
+    if (!l) return '';
+    const inner = l.hasImage ? '' : layerInner(l, regSpan);
+    return `      <div class="${cls}">${inner}</div>`;
+  }).join('\n');
+
+  // ── Fonts ──────────────────────────────────────────────────────────────────
+  const allFontMap = {};
+  banners.forEach(b => {
+    Object.entries(buildFontMap(b.layers)).forEach(([f, ws]) => {
+      if (!allFontMap[f]) allFontMap[f] = new Set();
+      ws.forEach(w => allFontMap[f].add(w));
+    });
+  });
+  const fontLink = buildFontLink(allFontMap);
+
+  // ── Base CSS: all layer classes are positioned inside .bv ─────────────────
+  const baseLayerCSS = allClasses
+    .map(cls => `.bv .${cls} { position: absolute; box-sizing: border-box; }`)
+    .join('\n');
+
+  // ── @container breakpoints — one per banner size ───────────────────────────
+  // Strategy: fixed-px layer positions inside .bv, then scale .bv to fill container.
+  // tan(atan2(100cqi, Wpx)) = containerWidth / W — a unitless ratio that updates
+  // continuously at every sub-pixel, giving perfectly smooth scaling within each range.
+  const containerQueries = banners.map((b, i) => {
+    const larger    = i > 0 ? banners[i - 1].w : null;
+    const isSmallest = i === banners.length - 1;
+
+    let cond;
+    if (banners.length === 1) cond = '';
+    else if (!larger)         cond = ` (width >= ${b.w}px)`;
+    else if (isSmallest)      cond = ` (width < ${larger}px)`;
+    else                      cond = ` (${b.w}px <= width < ${larger}px)`;
+
+    const scale = `tan(atan2(100cqi, ${b.w}px))`;
+    const map   = bannerMaps[i];
+
+    let bgRule = '';
+    if (b.rootGradient) bgRule = `background: ${gradientCSS(b.rootGradient)};`;
+    else if (b.rootFill) bgRule = `background: ${b.rootFill};`;
+
+    // Per-layer CSS for this banner size (plain px — scale handles the rest).
+    // Matching strategy (in order):
+    //   1. Name match  — class built from Figma layer name, same in both banners
+    //   2. Text match  — TEXT layers matched by their string content (handles renamed layers)
+    //   3. Hidden      — layer doesn't exist in this size → display:none
+    const layerCSS = allClasses.map(cls => {
+      // 1. Name-based match
+      let l = map.byName[cls];
+
+      // 2. Text-content fallback for TEXT layers (three tiers of fuzziness)
+      if (!l) {
+        const masterL = bannerMaps[0].byName[cls];
+        if (masterL?.type === 'TEXT' && masterL?.text) {
+          const key   = masterL.text.trim().slice(0, 120);
+          const norm  = normText(masterL.text).slice(0, 120);
+          const alpha = alphaText(masterL.text);
+          l = map.byText[key] || map.byTextNorm[norm] || map.byTextAlpha[alpha];
+        }
+      }
+
+      // 3. Not in this banner size — log so developer can diagnose
+      if (!l) {
+        const masterL = bannerMaps[0].byName[cls];
+        const hint = masterL?.type === 'TEXT' ? ` (text: "${(masterL.text||'').slice(0,40)}")` : '';
+        console.warn(`[banner] ${b.w}×${b.h}: hiding "${cls}"${hint} — no match found`);
+        return `  .bv .${cls} { display: none; }`;
+      }
+
+      // Plain px values — .bv's scale transform handles proportional resizing.
+      const rules = layerRulesCSS(l).filter(r =>
+        !r.startsWith('position:') && !r.startsWith('box-sizing:')
+      );
+      rules.unshift('display: block');
+
+      // Image layers: CSS background-image (url() can differ per breakpoint; <img> can't)
+      if (l.hasImage && l.imageUrl) {
+        const fit = _vcTypes.has(l.type) ? 'contain' : 'cover';
+        rules.push(`background-image: url('${l.imageUrl}')`);
+        rules.push('background-repeat: no-repeat');
+        rules.push(`background-size: ${fit}`);
+        rules.push('background-position: center');
+      }
+
+      return `  .bv .${cls} { ${rules.join('; ')} }`;
+    }).join('\n');
+
+    return `/* ${b.w}×${b.h} */
+@container bco${cond} {
+  .bc { height: calc(${scale} * ${b.h}px); ${bgRule} }
+  .bv { width: ${b.w}px; height: ${b.h}px; scale: ${scale}; }
+${layerCSS}
+}`;
+  }).join('\n\n');
+
+  // ── Span classes ───────────────────────────────────────────────────────────
+  const spanCSS = Object.entries(spanMap)
+    .map(([decls, cls]) => `.${cls} { ${decls} }`)
+    .join('\n');
+
+  // Debug: show layer class→name mapping per banner in HTML comment
+  // Also marks which layers are matched by text fallback in each breakpoint
+  const debugComment = banners.map((b, i) => {
+    const map = bannerMaps[i];
+    const pairs = allClasses.map(cls => {
+      const byName = map.byName[cls];
+      if (byName) return `  ${cls} ✓name "${byName.name || '?'}"`;
+      const masterL = bannerMaps[0].byName[cls];
+      if (masterL?.type === 'TEXT' && masterL?.text) {
+        const key  = masterL.text.trim().slice(0, 120);
+        const norm = normText(masterL.text).slice(0, 120);
+        if (map.byText[key])      return `  ${cls} ✓text "${map.byText[key].name || '?'}"`;
+        if (map.byTextNorm[norm]) return `  ${cls} ✓norm "${map.byTextNorm[norm].name || '?'}"`;
+      }
+      return `  ${cls} ✗hidden`;
+    }).join('\n');
+    return `Banner ${i} (${b.w}×${b.h}):\n${pairs}`;
+  }).join('\n\n');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+${fontLink}
+<!--
+LAYER CLASS DEBUG — view source to diagnose missing layers
+${debugComment}
+-->
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: transparent; }
+
+/* Named container — gives cqi its reference size */
+.bc-outer {
+  container-type: inline-size;
+  container-name: bco;
+  width: 100%;
+}
+
+/* Banner stage — height driven by @container scale rules */
+.bc {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Design div — fixed at Figma pixel dimensions, scaled to fill container.
+   transform-origin: top left so scaling stays anchored to the top-left corner. */
+.bv {
+  position: absolute;
+  top: 0; left: 0;
+  transform-origin: top left;
+  overflow: hidden;
+}
+
+/* Base: all semantic layer classes — positioned inside .bv */
+${baseLayerCSS}
+
+/* Responsive layout — pure CSS, zero JS.
+   scale: tan(atan2(100cqi, Wpx)) is a continuous unitless ratio = containerWidth/W.
+   It updates at every sub-pixel as the container resizes → perfectly smooth scaling. */
+${containerQueries}
+
+/* Mixed-text span classes — no inline style="" anywhere */
+${spanCSS}
+
+.terms-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  font-family: 'Montserrat', sans-serif;
+}
+.terms-modal.is-open {
+  display: block;
+}
+.terms-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+.terms-modal__dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92vw, 900px);
+  height: min(90vh, 720px);
+  background: #FFF;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.terms-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #E5E7EB;
+  background: #FAF7F5;
+  flex-shrink: 0;
+}
+.terms-modal__title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #132122;
+  margin: 0;
+}
+.terms-modal__close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: #132122;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+.terms-modal__close:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+.terms-modal__body {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  background: #FFF;
+}
+.terms-modal__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+</style>
+</head>
+<body>
+<div class="bc-outer">
+  <div class="bc">
+    <div class="bv">
+${layerDivs}
+    </div>
+  </div>
+  <div id="terms-modal" class="terms-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="terms-modal-title">
+    <div class="terms-modal__backdrop" data-terms-close></div>
+    <div class="terms-modal__dialog" role="document">
+      <div class="terms-modal__header">
+        <h2 id="terms-modal-title" class="terms-modal__title">Terms &amp; Conditions</h2>
+        <button type="button" class="terms-modal__close" aria-label="Close" data-terms-close>&#xD7;</button>
+      </div>
+      <div class="terms-modal__body">
+        <iframe class="terms-modal__frame" title="Terms and Conditions" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+<script> (function () { var modal = document.getElementById('terms-modal'); if (!modal) return; var iframe = modal.querySelector('.terms-modal__frame'); function openTermsModal(url) { iframe.setAttribute('src', url); modal.classList.add('is-open'); modal.setAttribute('aria-hidden', 'false'); } function closeTermsModal() { modal.classList.remove('is-open'); modal.setAttribute('aria-hidden', 'true'); iframe.setAttribute('src', 'about:blank'); } document.addEventListener('click', function (e) { var target = e.target; if (!target || typeof target.closest !== 'function') return; var link = target.closest('a[data-terms-link]'); if (!link) return; e.preventDefault(); openTermsModal(link.href); }); modal.addEventListener('click', function (e) { var t = e.target; if (t && t.nodeType === 1 && t.hasAttribute('data-terms-close')) closeTermsModal(); }); document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal.classList.contains('is-open')) closeTermsModal(); }); })(); <\/script>
+</body>
+</html>`;
+}
+
+async function runPipeline() {
+  const token = document.getElementById('figma-token').value.trim();
+  const urlInputs = [...document.querySelectorAll('.url-input')];
+  const urls = urlInputs.map(i => i.value.trim()).filter(Boolean);
+
+  if (!token) return setStatus('⚠ Enter your Figma access token', 'error');
+  if (!urls.length) return setStatus('⚠ Enter at least one Figma URL', 'error');
+  saveToken();
+
+  const btn = document.getElementById('generate-btn');
+  btn.disabled = true;
+  document.getElementById('post-actions').style.display = 'none';
+  const t0 = Date.now();
+  const banners = [];
+
+  for (let i = 0; i < urlInputs.length; i++) {
+    const url = urlInputs[i].value.trim();
+    if (!url) continue;
+    const row = urlInputs[i].closest('.url-row');
+    row.className = 'url-row processing';
+    setStatus(`<div class="spinner"></div> Banner ${i+1}/${urls.length}: fetching from Figma…`);
+    setProgress(2);
+    try {
+      const banner = await processBannerUrl(url, token);
+      banners.push(banner);
+      const tag = row.querySelector('.size-tag');
+      tag.textContent = banner.size; tag.style.display = 'inline-block';
+      row.className = 'url-row done';
+    } catch(e) {
+      row.className = 'url-row error';
+      setStatus(`⚠ Banner ${i+1}: ${e.message}`, 'error');
+    }
+  }
+
+  if (!banners.length) { btn.disabled = false; return; }
+
+  setStatus('<div class="spinner"></div> Building responsive HTML…'); setProgress(3);
+  // Sort banner sizes largest→smallest for sensible media query fallback order
+  banners.sort((a, b) => b.w - a.w);
+  const html = banners.length === 1
+    ? generateBannerHTML(banners[0].layers, banners[0].rootFill, banners[0].rootGradient, banners[0].w, banners[0].h)
+    : generateResponsiveHTML(banners);
+
+  generatedHTML = html;
+  const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+  const totalLayers = banners.reduce((s, b) => s + b.layers.length, 0);
+  const sizeList = banners.map(b => b.size).join(', ');
+  renderPreview(html, banners, totalLayers, elapsed);
+  setProgress(4);
+  setStatus(`✓ Done! ${banners.length} size${banners.length>1?'s':''} (${sizeList}), ${totalLayers} layers`, 'success');
+  document.getElementById('post-actions').style.display = 'block';
+  btn.disabled = false;
+}
+
+function downloadHTML() {
+  if (!generatedHTML) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([generatedHTML], { type: 'text/html' }));
+  a.download = 'banner.html'; a.click();
+}
+
+function copyHTML() {
+  if (!generatedHTML) return;
+  navigator.clipboard.writeText(generatedHTML).then(() => {
+    setStatus('✓ Copied!', 'success');
+  });
+}
+
+function toggleCode() {
+  codeVisible = !codeVisible;
+  const cb = document.getElementById('code-block');
+  if (cb) cb.style.display = codeVisible ? 'block' : 'none';
+}
+
+const TEST_URLS = [
+  'https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7446&m=dev',
+  'https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7463&m=dev',
+  'https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7391&m=dev',
+  'https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7417&m=dev',
+  'https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7431&m=dev',
+];
+
+function resetTool() {
+  // Restore test URLs (size-tags cleared, states reset)
+  document.getElementById('url-list').innerHTML = TEST_URLS.map(u => `<div class="url-row">
+    <input type="text" class="url-input" value="${u}"/>
+    <span class="size-tag"></span>
+    <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
+  </div>`).join('');
+  // Keep the token — user shouldn't have to re-enter it every time
+  document.getElementById('preview-panel').innerHTML = `<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><p>Banner preview will appear here</p><small>Fill in the form on the right → click Generate</small></div>`;
+  document.getElementById('post-actions').style.display = 'none';
+  generatedHTML = ''; codeVisible = false;
+  setProgress(1); setStatus('');
+  document.getElementById('generate-btn').disabled = false;
+}
+
+(async () => {
+  try {
+    const cfg = await fetch('/api/config').then(r => r.json());
+    if (cfg.figmaToken) {
+      const input = document.getElementById('figma-token');
+      if (input && !input.value) input.value = cfg.figmaToken;
+    }
+  } catch (_) {}
+})();
+</script>
+</body>
+</html>

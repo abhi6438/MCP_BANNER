@@ -131,27 +131,7 @@
       <label>Figma banner URLs <span style="font-weight:400;color:#aaa">— one per size</span></label>
       <div class="url-list" id="url-list">
         <div class="url-row">
-          <input type="text" class="url-input" value="https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7446&m=dev" />
-          <span class="size-tag"></span>
-          <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
-        </div>
-        <div class="url-row">
-          <input type="text" class="url-input" value="https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7463&m=dev" />
-          <span class="size-tag"></span>
-          <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
-        </div>
-        <div class="url-row">
-          <input type="text" class="url-input" value="https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7391&m=dev" />
-          <span class="size-tag"></span>
-          <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
-        </div>
-        <div class="url-row">
-          <input type="text" class="url-input" value="https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7417&m=dev" />
-          <span class="size-tag"></span>
-          <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
-        </div>
-        <div class="url-row">
-          <input type="text" class="url-input" value="https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7431&m=dev" />
+          <input type="text" class="url-input" placeholder="https://www.figma.com/file/..." />
           <span class="size-tag"></span>
           <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
         </div>
@@ -1428,21 +1408,12 @@ function toggleCode() {
   if (cb) cb.style.display = codeVisible ? 'block' : 'none';
 }
 
-const TEST_URLS = [
-  'https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7446&m=dev',
-  'https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7463&m=dev',
-  'https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7391&m=dev',
-  'https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7417&m=dev',
-  'https://www.figma.com/design/X7OuLA1u93b2J66RuOCeMv/5321-Partner-Kit-of-Parts-%E2%80%93-SHS--AHM--and-IHR?node-id=9021-7431&m=dev',
-];
-
 function resetTool() {
-  // Restore test URLs (size-tags cleared, states reset)
-  document.getElementById('url-list').innerHTML = TEST_URLS.map(u => `<div class="url-row">
-    <input type="text" class="url-input" value="${u}"/>
+  document.getElementById('url-list').innerHTML = `<div class="url-row">
+    <input type="text" class="url-input" placeholder="https://www.figma.com/file/..."/>
     <span class="size-tag"></span>
     <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
-  </div>`).join('');
+  </div>`;
   // Keep the token — user shouldn't have to re-enter it every time
   document.getElementById('preview-panel').innerHTML = `<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><p>Banner preview will appear here</p><small>Fill in the form on the right → click Generate</small></div>`;
   document.getElementById('post-actions').style.display = 'none';
@@ -1451,6 +1422,15 @@ function resetTool() {
   document.getElementById('generate-btn').disabled = false;
 }
 
+(async () => {
+  try {
+    const cfg = await fetch('/api/config').then(r => r.json());
+    if (cfg.figmaToken) {
+      const input = document.getElementById('figma-token');
+      if (input && !input.value) input.value = cfg.figmaToken;
+    }
+  } catch (_) {}
+})();
 </script>
 </body>
 </html>

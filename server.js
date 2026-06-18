@@ -128,6 +128,11 @@ async function callAI(messages) {
 }
 
 
+// Expose Figma token from .env to frontend
+app.get('/api/config', (_req, res) => {
+  res.json({ figmaToken: process.env.FIGMA_API_KEY || '' });
+});
+
 // Fetch real image URLs from Figma for image layers
 app.post('/api/figma-images', async (req, res) => {
   const { fileKey, nodeIds, token } = req.body;

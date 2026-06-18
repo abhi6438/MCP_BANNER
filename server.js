@@ -127,10 +127,6 @@ async function callAI(messages) {
   }
 }
 
-// Expose config to frontend (localhost only)
-app.get('/api/config', (req, res) => {
-  res.json({ figmaToken: process.env.FIGMA_API_KEY || '' });
-});
 
 // Fetch real image URLs from Figma for image layers
 app.post('/api/figma-images', async (req, res) => {

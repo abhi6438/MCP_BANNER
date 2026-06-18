@@ -1451,15 +1451,6 @@ function resetTool() {
   document.getElementById('generate-btn').disabled = false;
 }
 
-(async () => {
-  try {
-    const cfg = await fetch('/api/config').then(r => r.json());
-    if (cfg.figmaToken) {
-      const input = document.getElementById('figma-token');
-      if (input && !input.value) input.value = cfg.figmaToken;
-    }
-  } catch (_) {}
-})();
 </script>
 </body>
 </html>

@@ -86,6 +86,7 @@ async function callAI(messages) {
         } catch(e) { /* leave as-is if parse fails */ }
       }
 
+      
       // Shorten the rules section
       const W = extractSize(content,'w'), H = extractSize(content,'h');
       content = content.replace(

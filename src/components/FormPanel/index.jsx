@@ -12,10 +12,11 @@ const FORMAT_BTN_LABELS = {
 
 const TOKEN_STEPS = [
   { n: 1, text: 'Go to', link: { label: 'figma.com/settings', href: 'https://www.figma.com/settings' } },
-  { n: 2, text: 'Scroll to Personal access tokens → click Generate new token' },
-  { n: 3, text: 'Give it any name (e.g. "Code Generator")' },
-  { n: 4, text: 'Under Scopes, enable file_content:read — Read the contents of and render images from files', highlight: 'file_content:read' },
-  { n: 5, text: 'Click Generate token and paste it here' },
+  { n: 2, text: 'Click the Security tab at the top' },
+  { n: 3, text: 'Scroll to Personal access tokens → click Generate new token' },
+  { n: 4, text: 'Give it any name (e.g. "Code Generator")' },
+  { n: 5, text: 'Under Scopes, enable file_content:read — Read the contents of and render images from files', highlight: 'file_content:read' },
+  { n: 6, text: 'Click Generate token and paste it here' },
 ];
 
 function TokenGuide({ onClose }) {

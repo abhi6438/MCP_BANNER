@@ -54,7 +54,9 @@
     flex-direction: column;
     overflow-y: auto;
     background: #f1f5f9;
-    min-height: 100vh;
+    position: sticky;
+    top: 0;
+    height: 100vh;
   }
 
   .preview-topbar {
@@ -68,6 +70,11 @@
     position: sticky;
     top: 0;
     z-index: 10;
+  }
+
+  .preview-panel {
+    top: 52px;
+    height: calc(100vh - 52px - 38px);
   }
 
   .preview-topbar-title {
@@ -311,7 +318,7 @@
   }
 
   .form-header {
-    padding: 28px 24px 24px;
+    padding: 14px 20px 12px;
     background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
     color: white;
     flex-shrink: 0;
@@ -320,15 +327,15 @@
   .form-header-top {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 6px;
+    gap: 9px;
+    margin-bottom: 4px;
   }
 
   .logo-icon {
-    width: 34px;
-    height: 34px;
+    width: 28px;
+    height: 28px;
     background: rgba(255,255,255,0.2);
-    border-radius: 9px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -336,33 +343,33 @@
     backdrop-filter: blur(8px);
   }
 
-  .form-header h1 { font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+  .form-header h1 { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
 
-  .form-header p { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+  .form-header p { font-size: 11px; color: rgba(255,255,255,0.75); margin-top: 1px; }
 
   .badge {
     display: inline-flex;
     align-items: center;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
-    padding: 2px 8px;
+    padding: 2px 6px;
     border-radius: 20px;
     background: rgba(255,255,255,0.2);
     color: rgba(255,255,255,0.9);
     border: 1px solid rgba(255,255,255,0.25);
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    margin-left: 6px;
+    margin-left: 5px;
   }
 
   .pill-tag {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    margin-top: 12px;
-    font-size: 11px;
+    margin-top: 8px;
+    font-size: 10px;
     font-weight: 500;
-    padding: 5px 11px;
+    padding: 4px 10px;
     border-radius: 20px;
     background: rgba(255,255,255,0.15);
     color: rgba(255,255,255,0.9);
@@ -371,7 +378,7 @@
   }
 
   .form-body {
-    padding: 20px 24px 0;
+    padding: 12px 20px 16px;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -380,7 +387,7 @@
   }
 
   .form-footer {
-    padding: 16px 24px;
+    padding: 12px 20px;
     border-top: 1px solid var(--border);
     background: var(--surface);
     flex-shrink: 0;
@@ -390,7 +397,7 @@
   .progress {
     display: flex;
     gap: 5px;
-    margin-bottom: 22px;
+    margin-bottom: 12px;
   }
 
   .prog-seg {
@@ -405,21 +412,21 @@
   .prog-seg.done { background: var(--green); }
 
   /* Fields */
-  .field { margin-bottom: 18px; }
+  .field { margin-bottom: 10px; }
 
   label {
     display: block;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--text-secondary);
-    margin-bottom: 7px;
+    margin-bottom: 5px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
 
   input[type="text"], input[type="password"] {
     width: 100%;
-    padding: 10px 13px;
+    padding: 8px 12px;
     font-size: 13px;
     font-family: 'Inter', sans-serif;
     border: 1.5px solid var(--border);
@@ -436,11 +443,11 @@
     box-shadow: 0 0 0 3px var(--accent-glow);
   }
 
-  .hint { font-size: 11px; color: var(--text-muted); margin-top: 5px; line-height: 1.5; }
+  .hint { font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
   .hint a { color: var(--accent); text-decoration: none; }
   .hint a:hover { text-decoration: underline; }
 
-  .divider { height: 1px; background: var(--border); margin: 18px 0; }
+  .divider { height: 1px; background: var(--border); margin: 10px 0; }
 
   /* URL list */
   .url-list { display: flex; flex-direction: column; gap: 7px; }
@@ -482,7 +489,7 @@
   .btn-remove:hover { background: var(--red-light); color: var(--red); }
 
   .btn-add-url {
-    margin-top: 8px;
+    margin-top: 6px;
     font-size: 12px;
     font-weight: 500;
     font-family: 'Inter', sans-serif;
@@ -490,7 +497,7 @@
     background: transparent;
     border: 1.5px dashed #a5b4fc;
     border-radius: var(--radius-sm);
-    padding: 8px 14px;
+    padding: 6px 14px;
     cursor: pointer;
     width: 100%;
     text-align: center;
@@ -510,7 +517,7 @@
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    margin-bottom: 10px;
+    margin-bottom: 7px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -530,8 +537,8 @@
   .format-opt label {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    padding: 10px 12px;
+    gap: 2px;
+    padding: 7px 10px;
     border: 1.5px solid var(--border);
     border-radius: var(--radius-sm);
     cursor: pointer;
@@ -638,6 +645,346 @@
     box-shadow: var(--shadow-md);
   }
 
+  /* ── Top Navbar ── */
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 28px;
+    height: 52px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+    grid-column: 1 / -1;
+  }
+
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+    margin-right: 32px;
+    flex-shrink: 0;
+  }
+
+  .navbar-brand-icon {
+    width: 26px;
+    height: 26px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .navbar-links {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+  }
+
+  .nav-link {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 7px;
+    transition: all 0.15s;
+  }
+
+  .nav-link:hover { background: var(--surface-2); color: var(--text-primary); }
+  .nav-link.active { color: var(--accent); background: var(--accent-light); }
+
+  .navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .nav-btn {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .nav-btn-ghost {
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border);
+  }
+
+  .nav-btn-ghost:hover { background: var(--surface-2); border-color: var(--border-hover); }
+
+  .nav-btn-primary {
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    border: none;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+  }
+
+  .nav-btn-primary:hover { box-shadow: 0 4px 14px rgba(99,102,241,0.4); transform: translateY(-1px); }
+
+  /* ── Slide panel (About / Careers / Contact) ── */
+  .slide-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.4);
+    z-index: 200;
+    backdrop-filter: blur(2px);
+  }
+
+  .slide-overlay.open { display: block; }
+
+  .slide-panel {
+    position: fixed;
+    top: 0; right: -480px;
+    width: 440px;
+    max-width: 95vw;
+    height: 100vh;
+    background: var(--surface);
+    box-shadow: -8px 0 40px rgba(0,0,0,0.15);
+    z-index: 201;
+    display: flex;
+    flex-direction: column;
+    transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+    overflow-y: auto;
+  }
+
+  .slide-panel.open { right: 0; }
+
+  .slide-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 1;
+  }
+
+  .slide-panel-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+
+  .slide-close {
+    width: 32px; height: 32px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    font-size: 16px;
+    transition: all 0.15s;
+  }
+
+  .slide-close:hover { background: var(--surface-2); color: var(--text-primary); }
+
+  .slide-panel-body { padding: 28px 24px; flex: 1; }
+
+  .slide-section { margin-bottom: 28px; }
+
+  .slide-section h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+  }
+
+  .slide-section p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+
+  .slide-stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .slide-stat {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 12px;
+    text-align: center;
+  }
+
+  .slide-stat-num { font-size: 22px; font-weight: 800; color: var(--accent); }
+  .slide-stat-lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .job-card {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: border-color 0.15s;
+    cursor: pointer;
+  }
+
+  .job-card:hover { border-color: var(--accent); background: var(--accent-light); }
+  .job-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .job-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .job-badge {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 2px 8px; border-radius: 20px; margin-top: 6px;
+    background: var(--green-light); color: var(--green);
+    border: 1px solid #6ee7b7;
+  }
+
+  .contact-form { display: flex; flex-direction: column; gap: 12px; }
+
+  .contact-form input, .contact-form textarea {
+    width: 100%; padding: 10px 13px; font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    outline: none; background: var(--surface-2); color: var(--text-primary);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    resize: vertical;
+  }
+
+  .contact-form input:focus, .contact-form textarea:focus {
+    border-color: var(--accent); background: var(--surface);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .contact-submit {
+    padding: 11px; font-size: 13px; font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    color: #fff; border: none; border-radius: var(--radius-sm);
+    cursor: pointer; box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+    transition: all 0.2s;
+  }
+
+  .contact-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(99,102,241,0.4); }
+
+  .nav-free-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-light);
+    border: 1px solid #c7d2fe;
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+
+  /* ── Footer (fixed compact bar) ── */
+  .site-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border);
+    padding: 0 28px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+  }
+
+  .footer-brand-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+  }
+
+  .footer-brand-icon {
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .footer-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--border);
+    margin: 0 14px;
+    flex-shrink: 0;
+  }
+
+  .footer-links {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+  }
+
+  .footer-link {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+    white-space: nowrap;
+  }
+
+  .footer-link:hover { color: var(--accent); }
+
+  .footer-copyright {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    margin-left: auto;
+  }
+
+  /* Push page content above the fixed footer */
+  body { padding-bottom: 38px; }
+
+  /* Adjust sticky panels to account for navbar + fixed footer height */
+  .form-panel {
+    top: 52px;
+    height: calc(100vh - 52px - 38px);
+  }
+
   .code-tabs {
     display: flex;
     gap: 2px;
@@ -679,6 +1026,35 @@
 </style>
 </head>
 <body>
+
+<!-- Top Navigation -->
+<nav class="navbar">
+  <a href="#" class="navbar-brand">
+    <div class="navbar-brand-icon">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+        <path d="M2 17l10 5 10-5"/>
+        <path d="M2 12l10 5 10-5"/>
+      </svg>
+    </div>
+    Code Generator
+  </a>
+
+  <div class="navbar-links">
+    <a href="#" class="nav-link active" onclick="return false;">Home</a>
+    <a href="#" class="nav-link" onclick="openPanel('about');return false;">About</a>
+    <a href="#" class="nav-link" onclick="openPanel('careers');return false;">Careers</a>
+    <a href="#" class="nav-link" onclick="openPanel('contact');return false;">Contact</a>
+  </div>
+
+  <div class="navbar-actions">
+    <span class="nav-free-badge">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+      Free Forever · AI-Powered · No Account Needed
+    </span>
+  </div>
+</nav>
+
 <div class="layout">
 
   <!-- LEFT: Preview -->
@@ -750,17 +1126,17 @@
           <div class="url-row">
             <input type="text" class="url-input" placeholder="https://www.figma.com/file/…" />
             <span class="size-tag"></span>
-            <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
+            <button type="button" class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
           </div>
         </div>
-        <button class="btn-add-url" onclick="addUrl()">+ Add another banner size</button>
+        <button type="button" class="btn-add-url" onclick="addUrl()">+ Add another banner size</button>
         <div class="hint" style="margin-top:8px;">Select each frame in Figma before copying its URL. Add all sizes — one responsive output will be generated.</div>
       </div>
 
       <!-- Token -->
       <div class="field">
         <label>Figma Access Token</label>
-        <input type="password" id="figma-token" placeholder="figd_…" />
+        <input type="password" id="figma-token" placeholder="figd_…" oninput="saveToken()" />
         <div class="hint">Get it at <a href="https://www.figma.com/settings" target="_blank">figma.com/settings</a> → Personal access tokens</div>
       </div>
 
@@ -863,7 +1239,7 @@ function addUrl() {
   row.className = 'url-row';
   row.innerHTML = `<input type="text" class="url-input" placeholder="https://www.figma.com/file/..."/>
     <span class="size-tag"></span>
-    <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>`;
+    <button type="button" class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>`;
   list.appendChild(row);
   row.querySelector('input').focus();
 }
@@ -2568,8 +2944,108 @@ ${layerDivs}
 </div>
 <script> (function () { var modal = document.getElementById('terms-modal'); if (!modal) return; var iframe = modal.querySelector('.terms-modal__frame'); function openTermsModal(url) { iframe.setAttribute('src', url); modal.classList.add('is-open'); modal.setAttribute('aria-hidden', 'false'); } function closeTermsModal() { modal.classList.remove('is-open'); modal.setAttribute('aria-hidden', 'true'); iframe.setAttribute('src', 'about:blank'); } document.addEventListener('click', function (e) { var target = e.target; if (!target || typeof target.closest !== 'function') return; var link = target.closest('a[data-terms-link]'); if (!link) return; e.preventDefault(); openTermsModal(link.href); }); modal.addEventListener('click', function (e) { var t = e.target; if (t && t.nodeType === 1 && t.hasAttribute('data-terms-close')) closeTermsModal(); }); document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal.classList.contains('is-open')) closeTermsModal(); }); })(); <\/script>
 </body>
-</html>`;
+</html>
+`;
 }
+
+const PANEL_CONTENT = {
+  about: {
+    title: 'About Us',
+    html: `
+      <div class="slide-section">
+        <h3>Who we are</h3>
+        <p>Code Generator is a free, AI-powered tool that converts Figma designs into clean, production-ready code — instantly, with no account required.</p>
+        <p>We believe the gap between design and code should be zero. Our mission is to help designers and developers ship faster together.</p>
+      </div>
+      <div class="slide-stat-row">
+        <div class="slide-stat"><div class="slide-stat-num">10K+</div><div class="slide-stat-lbl">Banners generated</div></div>
+        <div class="slide-stat"><div class="slide-stat-num">5</div><div class="slide-stat-lbl">Output formats</div></div>
+        <div class="slide-stat"><div class="slide-stat-num">100%</div><div class="slide-stat-lbl">Free forever</div></div>
+      </div>
+      <div class="slide-section">
+        <h3>What we support</h3>
+        <p>HTML + CSS, React + CSS Modules, React + Tailwind, React + Inline Styles, and Vue + CSS — all generated from a single Figma URL in seconds.</p>
+      </div>
+    `
+  },
+  careers: {
+    title: 'Careers',
+    html: `
+      <div class="slide-section">
+        <h3>Join our team</h3>
+        <p>We're a small, fully remote team building tools that developers and designers love. If you're passionate about bridging the design-to-code gap, we'd love to hear from you.</p>
+      </div>
+      <div class="slide-section">
+        <h3>Open roles</h3>
+        <div class="job-card">
+          <div class="job-title">Senior Frontend Engineer</div>
+          <div class="job-meta">Remote · Full-time</div>
+          <div class="job-badge">Hiring</div>
+        </div>
+        <div class="job-card">
+          <div class="job-title">UI/UX Designer</div>
+          <div class="job-meta">Remote · Full-time</div>
+          <div class="job-badge">Hiring</div>
+        </div>
+        <div class="job-card">
+          <div class="job-title">Developer Advocate</div>
+          <div class="job-meta">Remote · Contract</div>
+          <div class="job-badge">Hiring</div>
+        </div>
+      </div>
+      <div class="slide-section">
+        <h3>Interested?</h3>
+        <p>Send your resume and a note about what excites you to <a href="mailto:careers@codegenerator.io" style="color:var(--accent);">careers@codegenerator.io</a></p>
+      </div>
+    `
+  },
+  contact: {
+    title: 'Contact Us',
+    html: `
+      <div class="slide-section">
+        <h3>Get in touch</h3>
+        <p>Have a question, suggestion, or found a bug? We read every message and reply within 24 hours.</p>
+      </div>
+      <form class="contact-form" onsubmit="handleContactSubmit(event)">
+        <input type="text" placeholder="Your name" required />
+        <input type="email" placeholder="Email address" required />
+        <input type="text" placeholder="Subject" />
+        <textarea rows="5" placeholder="Your message…" required></textarea>
+        <button type="submit" class="contact-submit">Send message →</button>
+      </form>
+      <div class="slide-section" style="margin-top:24px;">
+        <h3>Other ways to reach us</h3>
+        <p>Email: <a href="mailto:hello@codegenerator.io" style="color:var(--accent);">hello@codegenerator.io</a></p>
+      </div>
+    `
+  }
+};
+
+function openPanel(key) {
+  const data = PANEL_CONTENT[key];
+  if (!data) return;
+  document.getElementById('panel-title').textContent = data.title;
+  document.getElementById('panel-body').innerHTML = data.html;
+  document.getElementById('slide-overlay').classList.add('open');
+  document.getElementById('slide-panel').classList.add('open');
+  // highlight active nav link
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.querySelector(`.nav-link[onclick*="${key}"]`)?.classList.add('active');
+}
+
+function closePanel() {
+  document.getElementById('slide-overlay').classList.remove('open');
+  document.getElementById('slide-panel').classList.remove('open');
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.querySelector('.nav-link[onclick*="false"]')?.classList.add('active');
+}
+
+function handleContactSubmit(e) {
+  e.preventDefault();
+  e.target.innerHTML = '<p style="text-align:center;padding:24px;color:var(--green);font-weight:600;">✓ Message sent! We\'ll be in touch within 24 hours.</p>';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
 
 async function runPipeline() {
   const token = document.getElementById('figma-token').value.trim();
@@ -2694,7 +3170,7 @@ function resetTool() {
   document.getElementById('url-list').innerHTML = `<div class="url-row">
     <input type="text" class="url-input" placeholder="https://www.figma.com/file/..."/>
     <span class="size-tag"></span>
-    <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
+    <button type="button" class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
   </div>`;
   // Keep the token — user shouldn't have to re-enter it every time
   // Reset preview content only — preserve the topbar structure
@@ -2730,5 +3206,40 @@ function resetTool() {
   } catch (_) {}
 })();
 </script>
+<!-- Slide overlay -->
+<div class="slide-overlay" id="slide-overlay" onclick="closePanel()"></div>
+
+<!-- Slide panel -->
+<div class="slide-panel" id="slide-panel">
+  <div class="slide-panel-header">
+    <div class="slide-panel-title" id="panel-title">About</div>
+    <button class="slide-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="slide-panel-body" id="panel-body"></div>
+</div>
+
+<!-- Footer -->
+<footer class="site-footer">
+  <div class="footer-brand-name">
+    <div class="footer-brand-icon">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+        <path d="M2 17l10 5 10-5"/>
+        <path d="M2 12l10 5 10-5"/>
+      </svg>
+    </div>
+    Code Generator
+  </div>
+  <div class="footer-sep"></div>
+  <div class="footer-links">
+    <a href="#" class="footer-link">Home</a>
+    <a href="#" class="footer-link" onclick="openPanel('about');return false;">About</a>
+    <a href="#" class="footer-link" onclick="openPanel('careers');return false;">Careers</a>
+    <a href="#" class="footer-link" onclick="openPanel('contact');return false;">Contact</a>
+    <a href="#" class="footer-link">Privacy</a>
+  </div>
+  <div class="footer-copyright">&copy; <span id="copy-year"></span> Code Generator &nbsp;&middot;&nbsp; Free Forever · AI-Powered · No Account Needed</div>
+</footer>
+<script>document.getElementById("copy-year").textContent=new Date().getFullYear();</script>
 </body>
 </html>

@@ -4,96 +4,678 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Banner Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #111; min-height: 100vh; }
-  .layout { display: grid; grid-template-columns: 1fr 320px; min-height: 100vh; }
 
-  .preview-panel { padding: 24px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
-  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #aaa; border: 1.5px dashed #ddd; border-radius: 12px; min-height: 400px; }
-  .empty-state svg { opacity: 0.3; }
-  .empty-state p { font-size: 14px; }
-  .empty-state small { font-size: 12px; color: #bbb; }
+  :root {
+    --accent: #6366f1;
+    --accent-dark: #4f46e5;
+    --accent-light: #eef2ff;
+    --accent-glow: rgba(99, 102, 241, 0.15);
+    --green: #10b981;
+    --green-light: #d1fae5;
+    --red: #ef4444;
+    --red-light: #fee2e2;
+    --surface: #ffffff;
+    --surface-2: #f8fafc;
+    --border: #e2e8f0;
+    --border-hover: #cbd5e1;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+    --radius: 10px;
+    --radius-sm: 7px;
+    --radius-lg: 14px;
+  }
 
-  .metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .metric { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 10px 14px; }
-  .metric-label { font-size: 11px; color: #888; }
-  .metric-val { font-size: 20px; font-weight: 600; color: #111; margin-top: 2px; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f1f5f9;
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
 
-  .preview-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 12px; overflow: hidden; }
-  .preview-toolbar { display: flex; gap: 6px; align-items: center; padding: 10px 14px; border-bottom: 1px solid #f0f0f0; flex-wrap: wrap; }
-  .preview-toolbar span { font-size: 13px; color: #666; flex: 1; }
-  .size-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer; color: #666; background: transparent; border: 1px solid #e0e0e0; }
-  .size-btn:hover { background: #f5f5f5; }
-  .size-btn.active { background: #111; color: #fff; border-color: #111; }
-  .preview-wrap { padding: 16px; background: #e0e0e0; display: flex; justify-content: center; align-items: flex-start; min-height: 160px; overflow: auto; }
-  iframe#preview { border: none; display: block; }
+  .layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    align-items: start;
+  }
 
-  .code-block { background: #1e1e1e; color: #d4d4d4; border-radius: 10px; padding: 14px; font-family: 'Menlo', 'Consolas', monospace; font-size: 11px; max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; display: none; }
+  /* ── PREVIEW PANEL ── */
+  .preview-panel {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    background: #f1f5f9;
+    min-height: 100vh;
+  }
+
+  .preview-topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .preview-topbar-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+  }
+
+  .preview-topbar-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .preview-content {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: var(--text-muted);
+    border: 2px dashed #cbd5e1;
+    border-radius: var(--radius-lg);
+    min-height: 440px;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(4px);
+  }
+
+  .empty-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--accent-light);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .empty-icon svg { color: var(--accent); opacity: 0.7; }
+
+  .empty-state p { font-size: 15px; font-weight: 500; color: var(--text-secondary); }
+  .empty-state small { font-size: 13px; color: var(--text-muted); }
+
+  /* Topbar controls (size buttons injected here) */
+  .topbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Info button + popover */
+  .info-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .info-btn {
+    width: 30px;
+    height: 30px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+
+  .info-btn:hover, .info-btn.active {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .info-popover {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    padding: 14px 16px;
+    min-width: 200px;
+    z-index: 100;
+  }
+
+  .info-popover::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 11px;
+    width: 10px;
+    height: 10px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    transform: rotate(45deg);
+  }
+
+  .info-popover.open { display: block; }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .info-row:last-child { border-bottom: none; }
+
+  .info-key {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .info-val {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* Preview card — no inner toolbar, canvas only */
+  .preview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Pulse dot in topbar */
+  .preview-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.2);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
+    50%       { box-shadow: 0 0 0 5px rgba(16,185,129,0.08); }
+  }
+
+  .size-btn {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border);
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .size-btn:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .size-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .preview-wrap {
+    padding: 24px;
+    background: #e8ecf2;
+    background-image: radial-gradient(circle, #c8d0de 1px, transparent 1px);
+    background-size: 20px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 160px;
+    overflow: auto;
+  }
+
+  iframe#preview { border: none; display: block; border-radius: 2px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); }
+
+  .code-block {
+    background: #0f172a;
+    color: #94a3b8;
+    border-radius: var(--radius);
+    padding: 16px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 11px;
+    max-height: 220px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    display: none;
+  }
+
   .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  .btn-action { font-size: 12px; padding: 7px 14px; border-radius: 8px; cursor: pointer; color: #444; background: #fff; border: 1px solid #ddd; display: flex; align-items: center; gap: 5px; }
-  .btn-action:hover { background: #f5f5f5; }
 
-  .form-panel { background: #fff; border-left: 1px solid #e8e8e8; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
-  .form-header { margin-bottom: 18px; }
-  .form-header h1 { font-size: 16px; font-weight: 600; color: #111; }
-  .form-header p { font-size: 12px; color: #888; margin-top: 3px; }
+  .btn-action {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+    box-shadow: var(--shadow-sm);
+  }
 
-  .progress { display: flex; gap: 4px; margin-bottom: 18px; }
-  .prog-seg { flex: 1; height: 3px; border-radius: 2px; background: #eee; transition: background 0.3s; }
-  .prog-seg.active { background: #111; }
-  .prog-seg.done { background: #22c55e; }
+  .btn-action:hover { background: var(--surface-2); border-color: var(--border-hover); color: var(--text-primary); }
 
-  .field { margin-bottom: 14px; }
-  label { display: block; font-size: 12px; font-weight: 500; color: #444; margin-bottom: 5px; }
+  /* ── FORM PANEL ── */
+  .form-panel {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.04);
+    order: -1;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .form-header {
+    padding: 28px 24px 24px;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .form-header-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .logo-icon {
+    width: 34px;
+    height: 34px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    backdrop-filter: blur(8px);
+  }
+
+  .form-header h1 { font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+
+  .form-header p { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.9);
+    border: 1px solid rgba(255,255,255,0.25);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-left: 6px;
+  }
+
+  .pill-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 11px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.9);
+    border: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(4px);
+  }
+
+  .form-body {
+    padding: 20px 24px 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .form-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  /* Progress */
+  .progress {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 22px;
+  }
+
+  .prog-seg {
+    flex: 1;
+    height: 4px;
+    border-radius: 4px;
+    background: #e2e8f0;
+    transition: background 0.35s ease;
+  }
+
+  .prog-seg.active { background: var(--accent); }
+  .prog-seg.done { background: var(--green); }
+
+  /* Fields */
+  .field { margin-bottom: 18px; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 7px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
   input[type="text"], input[type="password"] {
-    width: 100%; padding: 9px 12px; font-size: 13px; border: 1px solid #ddd;
-    border-radius: 8px; outline: none; background: #fafafa; color: #111; transition: border-color 0.2s;
+    width: 100%;
+    padding: 10px 13px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    outline: none;
+    background: var(--surface-2);
+    color: var(--text-primary);
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   }
-  input:focus { border-color: #111; background: #fff; }
-  .hint { font-size: 11px; color: #aaa; margin-top: 4px; }
-  .hint a { color: #0066cc; text-decoration: none; }
+
+  input:focus {
+    border-color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .hint { font-size: 11px; color: var(--text-muted); margin-top: 5px; line-height: 1.5; }
+  .hint a { color: var(--accent); text-decoration: none; }
   .hint a:hover { text-decoration: underline; }
-  .divider { height: 1px; background: #f0f0f0; margin: 14px 0; }
 
-  .btn-generate {
-    width: 100%; padding: 11px; font-size: 14px; font-weight: 600;
-    background: #111; color: #fff; border: none; border-radius: 8px;
-    cursor: pointer; transition: opacity 0.2s;
+  .divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+  /* URL list */
+  .url-list { display: flex; flex-direction: column; gap: 7px; }
+
+  .url-row { display: flex; align-items: center; gap: 7px; }
+  .url-row input { flex: 1; min-width: 0; }
+
+  .size-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 5px;
+    background: var(--green-light);
+    color: var(--green);
+    border: 1px solid #6ee7b7;
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: none;
+    letter-spacing: 0.02em;
   }
-  .btn-generate:hover { opacity: 0.85; }
-  .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  .status { font-size: 12px; color: #666; margin-top: 10px; text-align: center; min-height: 20px; display: flex; align-items: center; justify-content: center; gap: 6px; }
-  .status.error { color: #dc2626; }
-  .status.success { color: #16a34a; }
+  .btn-remove {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
 
-  .spinner { width: 13px; height: 13px; border: 2px solid #ddd; border-top-color: #111; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  .btn-remove:hover { background: var(--red-light); color: var(--red); }
+
+  .btn-add-url {
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    color: var(--accent);
+    background: transparent;
+    border: 1.5px dashed #a5b4fc;
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    transition: all 0.15s;
+  }
+
+  .btn-add-url:hover { background: var(--accent-light); border-color: var(--accent); }
+
+  .url-row.processing input { border-color: #a5b4fc; background: var(--accent-light); }
+  .url-row.done input { border-color: #6ee7b7; background: var(--green-light); }
+  .url-row.error input { border-color: #fca5a5; background: var(--red-light); }
+
+  /* Format selector */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .format-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .format-opt { position: relative; }
+  .format-opt input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+
+  .format-opt label {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--surface-2);
+    transition: all 0.15s;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .format-opt label small {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text-muted);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .format-opt label:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: var(--accent-dark);
+  }
+
+  .format-opt input:checked + label {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  /* Generate button */
+  .btn-generate {
+    width: 100%;
+    padding: 13px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, var(--accent) 0%, #7c3aed 100%);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    letter-spacing: -0.01em;
+  }
+
+  .btn-generate:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+  }
+
+  .btn-generate:active { transform: translateY(0); }
+
+  .btn-generate:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Status */
+  .status {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-top: 12px;
+    text-align: center;
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+  }
+
+  .status.error { color: var(--red); }
+  .status.success { color: var(--green); }
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #e2e8f0;
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .post-actions { display: none; margin-top: 16px; }
-  .post-actions .actions { flex-direction: column; }
-  .post-actions .btn-action { justify-content: center; }
+  .post-actions { display: none; }
+  .post-actions .btn-action:last-child:hover { background: var(--red-light); }
 
-  .badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; margin-left: 6px; font-weight: 500; }
+  /* Code viewer */
+  .code-viewer {
+    background: #0f172a;
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: none;
+    margin-top: 14px;
+    box-shadow: var(--shadow-md);
+  }
 
-  /* Multi-URL rows */
-  .url-list { display: flex; flex-direction: column; gap: 6px; }
-  .url-row { display: flex; align-items: center; gap: 6px; }
-  .url-row input { flex: 1; min-width: 0; }
-  .size-tag { font-size: 10px; font-weight: 600; padding: 3px 7px; border-radius: 5px;
-              background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;
-              white-space: nowrap; flex-shrink: 0; display: none; }
-  .btn-remove { width: 24px; height: 24px; border: none; border-radius: 5px; background: transparent;
-                cursor: pointer; color: #bbb; font-size: 14px; line-height: 1; flex-shrink: 0; }
-  .btn-remove:hover { background: #fee2e2; color: #dc2626; }
-  .btn-add-url { margin-top: 6px; font-size: 12px; color: #0066cc; background: transparent;
-                 border: 1px dashed #93c5fd; border-radius: 7px; padding: 6px 12px;
-                 cursor: pointer; width: 100%; text-align: center; }
-  .btn-add-url:hover { background: #eff6ff; }
-  .url-row.processing input { border-color: #93c5fd; background: #eff6ff; }
-  .url-row.done input { border-color: #86efac; background: #f0fdf4; }
-  .url-row.error input { border-color: #fca5a5; background: #fef2f2; }
+  .code-tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 1px solid #1e293b;
+    background: #0f172a;
+    padding: 0 4px;
+  }
+
+  .code-tab {
+    font-size: 11px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    padding: 8px 12px;
+    cursor: pointer;
+    color: #64748b;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+
+  .code-tab.active { color: #e2e8f0; border-bottom-color: var(--accent); }
+  .code-tab:hover:not(.active) { color: #94a3b8; }
+
+  .code-panel {
+    background: #0f172a;
+    color: #94a3b8;
+    padding: 14px 16px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 11px;
+    max-height: 260px;
+    overflow-y: auto;
+    white-space: pre;
+    word-break: normal;
+    overflow-x: auto;
+    line-height: 1.6;
+  }
 </style>
 </head>
 <body>
@@ -101,85 +683,162 @@
 
   <!-- LEFT: Preview -->
   <div class="preview-panel" id="preview-panel">
-    <div class="empty-state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
-      </svg>
-      <p>Banner preview will appear here</p>
-      <small>Fill in the form on the right → click Generate</small>
+    <div class="preview-topbar">
+      <div class="preview-topbar-title">
+        <div class="preview-dot" id="preview-dot" style="display:none;"></div>
+        Preview
+      </div>
+      <div class="topbar-controls" id="topbar-controls"></div>
+      <div class="info-wrap" id="info-wrap" style="display:none;">
+        <button class="info-btn" id="info-btn" aria-label="Details">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </button>
+        <div class="info-popover" id="info-popover"></div>
+      </div>
+    </div>
+    <div class="preview-content">
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <path d="M3 9h18M9 21V9"/>
+          </svg>
+        </div>
+        <p>Banner preview will appear here</p>
+        <small>Paste your Figma URLs → click Generate</small>
+      </div>
     </div>
   </div>
 
   <!-- RIGHT: Form -->
   <div class="form-panel">
+
+    <!-- Header -->
     <div class="form-header">
-      <h1>Banner generator <span class="badge">MVP</span></h1>
-      <p>Figma → HTML in seconds</p>
-      <div style="margin-top:8px;font-size:11px;padding:5px 10px;border-radius:6px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">
-        ⚡ Deterministic HTML — instant, no AI tokens
-      </div>
-    </div>
-
-    <div class="progress">
-      <div class="prog-seg active" id="p1"></div>
-      <div class="prog-seg" id="p2"></div>
-      <div class="prog-seg" id="p3"></div>
-      <div class="prog-seg" id="p4"></div>
-    </div>
-
-    <div class="field">
-      <label>Figma banner URLs <span style="font-weight:400;color:#aaa">— one per size</span></label>
-      <div class="url-list" id="url-list">
-        <div class="url-row">
-          <input type="text" class="url-input" placeholder="https://www.figma.com/file/..." />
-          <span class="size-tag"></span>
-          <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
+      <div class="form-header-top">
+        <div class="logo-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Banner Generator <span class="badge">Beta</span></h1>
+          <p>Figma frames → production-ready code</p>
         </div>
       </div>
-      <button class="btn-add-url" onclick="addUrl()">+ Add another banner size</button>
-      <div class="hint" style="margin-top:8px;">Select each frame in Figma before copying its URL. Add all sizes you need — a single responsive HTML will be generated.</div>
-    </div>
-
-    <div class="field">
-      <label>Figma access token</label>
-      <input type="password" id="figma-token" placeholder="figd_..." />
-      <div class="hint">Get it at <a href="https://www.figma.com/settings" target="_blank">figma.com/settings</a> → Personal access tokens</div>
-    </div>
-
-    <div class="divider"></div>
-
-    <button class="btn-generate" id="generate-btn" onclick="runPipeline()">
-      Generate responsive HTML
-    </button>
-    <div class="status" id="status-msg"></div>
-
-    <div class="post-actions" id="post-actions">
-      <div class="divider"></div>
-      <div class="actions">
-        <button class="btn-action" onclick="downloadHTML()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download .html
-        </button>
-        <button class="btn-action" onclick="copyHTML()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-          Copy HTML
-        </button>
-        <button class="btn-action" onclick="toggleCode()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          View code
-        </button>
-        <button class="btn-action" onclick="resetTool()" style="color:#dc2626;border-color:#fca5a5;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
-          Start over
-        </button>
+      <div class="pill-tag">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Deterministic — no AI tokens consumed
       </div>
     </div>
+
+    <div class="form-body">
+
+      <div class="progress" style="margin-top:4px;">
+        <div class="prog-seg active" id="p1"></div>
+        <div class="prog-seg" id="p2"></div>
+        <div class="prog-seg" id="p3"></div>
+        <div class="prog-seg" id="p4"></div>
+      </div>
+
+      <!-- Figma URLs -->
+      <div class="field">
+        <label>Figma Banner URLs</label>
+        <div class="url-list" id="url-list">
+          <div class="url-row">
+            <input type="text" class="url-input" placeholder="https://www.figma.com/file/…" />
+            <span class="size-tag"></span>
+            <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
+          </div>
+        </div>
+        <button class="btn-add-url" onclick="addUrl()">+ Add another banner size</button>
+        <div class="hint" style="margin-top:8px;">Select each frame in Figma before copying its URL. Add all sizes — one responsive output will be generated.</div>
+      </div>
+
+      <!-- Token -->
+      <div class="field">
+        <label>Figma Access Token</label>
+        <input type="password" id="figma-token" placeholder="figd_…" />
+        <div class="hint">Get it at <a href="https://www.figma.com/settings" target="_blank">figma.com/settings</a> → Personal access tokens</div>
+      </div>
+
+      <!-- Output format -->
+      <div class="field">
+        <div class="section-label">Output Format</div>
+        <div class="format-grid">
+          <div class="format-opt">
+            <input type="radio" name="fmt" id="fmt-html" value="html" checked onchange="updateGenerateBtn()">
+            <label for="fmt-html">HTML + CSS<small>Standalone file</small></label>
+          </div>
+          <div class="format-opt">
+            <input type="radio" name="fmt" id="fmt-react-css" value="react-css" onchange="updateGenerateBtn()">
+            <label for="fmt-react-css">React + CSS Modules<small>.jsx + .module.css</small></label>
+          </div>
+          <div class="format-opt">
+            <input type="radio" name="fmt" id="fmt-react-tw" value="react-tailwind" onchange="updateGenerateBtn()">
+            <label for="fmt-react-tw">React + Tailwind<small>.jsx + banner.css</small></label>
+          </div>
+          <div class="format-opt">
+            <input type="radio" name="fmt" id="fmt-react-inline" value="react-inline" onchange="updateGenerateBtn()">
+            <label for="fmt-react-inline">React + Inline<small>Single .jsx, no CSS</small></label>
+          </div>
+          <div class="format-opt">
+            <input type="radio" name="fmt" id="fmt-vue" value="vue" onchange="updateGenerateBtn()">
+            <label for="fmt-vue">Vue + CSS<small>Single .vue SFC</small></label>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /form-body -->
+
+    <!-- Always-visible footer: generate + actions -->
+    <div class="form-footer">
+      <button class="btn-generate" id="generate-btn" onclick="runPipeline()">
+        Generate responsive HTML
+      </button>
+      <div class="status" id="status-msg"></div>
+
+      <!-- Post-generate actions -->
+      <div class="post-actions" id="post-actions" style="margin-top:12px;">
+        <div class="actions" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <button class="btn-action" id="btn-download" onclick="handleDownload()" style="justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download
+          </button>
+          <button class="btn-action" id="btn-copy" onclick="handleCopy()" style="justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+          <button class="btn-action" onclick="resetTool()" style="justify-content:center;color:var(--red);border-color:#fca5a5;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+            Reset
+          </button>
+        </div>
+      </div>
+    </div><!-- /form-footer -->
+
   </div>
 </div>
 
 <script>
 let generatedHTML = '';
+let generatedFiles = [];   // [{name, content}] for multi-file formats
 let codeVisible = false;
+
+function getFormat() { return document.querySelector('input[name="fmt"]:checked')?.value || 'html'; }
+
+function updateGenerateBtn() {
+  const labels = {
+    'html': 'Generate responsive HTML',
+    'react-css': 'Generate React + CSS Modules',
+    'react-tailwind': 'Generate React + Tailwind',
+    'react-inline': 'Generate React + Inline Styles',
+    'vue': 'Generate Vue + CSS',
+  };
+  document.getElementById('generate-btn').textContent = labels[getFormat()] || 'Generate';
+}
 
 // Persist Figma token across reloads
 (function restoreToken() {
@@ -859,36 +1518,614 @@ ${layerHTML}
 </html>`;
 }
 
-function renderPreview(html, banners, layerCount, elapsed) {
-  const panel = document.getElementById('preview-panel');
-  const sizeList = banners.map(b => b.size).join(', ');
+// ── Shared computation for all framework generators ───────────────────────────
+function buildBannerAssets(banners) {
+  const spanMap = {};
+  const regSpan = decls => { const k=decls.slice().sort().join(';'); if(!spanMap[k]) spanMap[k]=`s${Object.keys(spanMap).length}`; return spanMap[k]; };
+  const sanitizeName = raw => (raw||'layer').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'layer';
+  const assignClasses = layers => { const c={}; return layers.map(l => { const b='l-'+sanitizeName(l.name); c[b]=(c[b]||0)+1; return c[b]===1?b:`${b}-${c[b]}`; }); };
+  const normText  = t => t.toLowerCase().replace(/\s+/g,' ').trim();
+  const alphaText = t => t.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,80);
 
-  // Size buttons — each stores exact banner dimensions so height is always correct
-  const sizeBtns = banners.map((b, i) =>
-    `<button class="size-btn${i===0?' active':''}" onclick="setPreviewSize(this,${b.w},${b.h})">${b.size}</button>`
+  const bannerClasses = banners.map(b => assignClasses(b.layers));
+  const masterLayers  = banners[0].layers;
+
+  const bannerMaps = banners.map((b,bi) => {
+    const byName={}, byText={}, byTextNorm={}, byTextAlpha={};
+    b.layers.forEach((l,i) => {
+      byName[bannerClasses[bi][i]] = l;
+      if(l.type==='TEXT' && l.text) {
+        const key=l.text.trim().slice(0,120), norm=normText(l.text).slice(0,120), alpha=alphaText(l.text);
+        if(!byText[key]) byText[key]=l;
+        if(!byTextNorm[norm]) byTextNorm[norm]=l;
+        if(!byTextAlpha[alpha]) byTextAlpha[alpha]=l;
+      }
+    });
+    return {byName, byText, byTextNorm, byTextAlpha};
+  });
+
+  const masterTextSet      = new Set(masterLayers.filter(l=>l.type==='TEXT'&&l.text).map(l=>l.text.trim().slice(0,120)));
+  const masterTextSetNorm  = new Set(masterLayers.filter(l=>l.type==='TEXT'&&l.text).map(l=>normText(l.text).slice(0,120)));
+  const masterTextSetAlpha = new Set(masterLayers.filter(l=>l.type==='TEXT'&&l.text).map(l=>alphaText(l.text)));
+
+  const allClasses = [...bannerClasses[0]];
+  bannerClasses.slice(1).forEach((classes,si) => {
+    const bi=si+1;
+    classes.forEach((cls,j) => {
+      if(allClasses.includes(cls)) return;
+      const l=banners[bi].layers[j];
+      if(l.type==='TEXT'&&l.text) {
+        const e=l.text.trim().slice(0,120), n=normText(l.text).slice(0,120), a=alphaText(l.text);
+        if(masterTextSet.has(e)||masterTextSetNorm.has(n)||masterTextSetAlpha.has(a)) return;
+      }
+      allClasses.push(cls);
+    });
+  });
+
+  const extraLayerContent = {};
+  allClasses.forEach(cls => { if(!bannerMaps[0].byName[cls]) bannerMaps.slice(1).find(m=>m.byName[cls]&&(extraLayerContent[cls]=m.byName[cls])); });
+
+  // Generate HTML layer divs — must run before CSS to populate spanMap
+  const layerDivs = allClasses.map(cls => {
+    const l = bannerMaps[0].byName[cls] ?? extraLayerContent[cls];
+    if(!l) return '';
+    const inner = l.hasImage ? '' : layerInner(l, regSpan);
+    return `      <div class="${cls}">${inner}</div>`;
+  }).join('\n');
+
+  // JSX version: class → className (only in the outer div attributes, not inside text nodes)
+  const layerDivsJSX = layerDivs.replace(/ class="(l-[^"]+)"/g, ' className="$1"');
+
+  // Fonts
+  const allFontMap = {};
+  banners.forEach(b => Object.entries(buildFontMap(b.layers)).forEach(([f,ws]) => { if(!allFontMap[f]) allFontMap[f]=new Set(); ws.forEach(w=>allFontMap[f].add(w)); }));
+  const fontLink     = buildFontLink(allFontMap);
+  const fontFamilies = Object.keys(allFontMap);
+  const fontImport   = fontFamilies.map(f => `@import url('https://fonts.googleapis.com/css2?family=${f.replace(/ /g,'+')}:wght@300;400;500;600;700;800;900&display=swap');`).join('\n');
+
+  // Base CSS
+  const baseLayerCSS = allClasses.map(cls => `.bv .${cls} { position: absolute; box-sizing: border-box; }`).join('\n');
+  // Flat version (no .bv prefix) for frameworks where prefix isn't needed
+  const baseLayerCSSFlat = allClasses.map(cls => `.${cls} { position: absolute; box-sizing: border-box; }`).join('\n');
+
+  // Container queries
+  const containerQueries = banners.map((b,i) => {
+    const larger = i>0 ? banners[i-1].w : null;
+    const isSmallest = i===banners.length-1;
+    let cond;
+    if(banners.length===1) cond='';
+    else if(!larger) cond=` (width >= ${b.w}px)`;
+    else if(isSmallest) cond=` (width < ${larger}px)`;
+    else cond=` (${b.w}px <= width < ${larger}px)`;
+
+    const scale=`tan(atan2(100cqi, ${b.w}px))`;
+    const map=bannerMaps[i];
+    let bgRule='';
+    if(b.rootGradient) bgRule=`background: ${gradientCSS(b.rootGradient)};`;
+    else if(b.rootFill) bgRule=`background: ${b.rootFill};`;
+
+    const layerCSS = allClasses.map(cls => {
+      let l = map.byName[cls];
+      if(!l) {
+        const mL=bannerMaps[0].byName[cls];
+        if(mL?.type==='TEXT'&&mL?.text) {
+          const key=mL.text.trim().slice(0,120), norm=normText(mL.text).slice(0,120), alpha=alphaText(mL.text);
+          l = map.byText[key]||map.byTextNorm[norm]||map.byTextAlpha[alpha];
+        }
+      }
+      if(!l) return `  .bv .${cls} { display: none; }`;
+
+      let rules = layerRulesCSS(l).filter(r => !r.startsWith('position:') && !r.startsWith('box-sizing:'));
+      rules.unshift('display: block');
+      const mL=bannerMaps[0].byName[cls];
+      if(mL?.type==='TEXT' && l.type!=='TEXT') {
+        rules = rules.filter(r => !r.startsWith('background') && r!=='overflow: hidden');
+        if(mL.color) rules.push(`color: ${mL.color}`);
+        if(mL.fontSize) rules.push(`font-size: ${mL.fontSize}px`);
+        if(mL.fontWeight) rules.push(`font-weight: ${mL.fontWeight}`);
+        if(mL.fontFamily) rules.push(`font-family: '${mL.fontFamily}', sans-serif`);
+        if(mL.textAlign) rules.push(`text-align: ${mL.textAlign}`);
+        rules.push('white-space: pre-wrap');
+      }
+      const zIdx=banners[i].layers.indexOf(l);
+      if(zIdx>=0) rules.push(`z-index: ${zIdx}`);
+      if(l.hasImage && l.imageUrl) {
+        const fit=_vcTypes.has(l.type)?'contain':'cover';
+        rules.push(`background-image: url('${l.imageUrl}')`);
+        rules.push('background-repeat: no-repeat');
+        rules.push(`background-size: ${fit}`);
+        rules.push('background-position: center');
+      }
+      return `  .bv .${cls} { ${rules.join('; ')} }`;
+    }).join('\n');
+    return `/* ${b.w}×${b.h} */\n@container bco${cond} {\n  .bc { height: calc(${scale} * ${b.h}px); ${bgRule} }\n  .bv { width: ${b.w}px; height: ${b.h}px; scale: ${scale}; }\n${layerCSS}\n}`;
+  }).join('\n\n');
+
+  // Flat container queries (no .bv prefix) for CSS Modules / Vue scoped
+  const containerQueriesFlat = containerQueries
+    .replace(/  \.bv \./g, '  .')
+    .replace(/\.bv \./g, '.');
+
+  const spanCSS = Object.entries(spanMap).map(([decls,cls]) => `.${cls} { ${decls} }`).join('\n');
+
+  return { fontLink, fontImport, fontFamilies, baseLayerCSS, baseLayerCSSFlat, containerQueries, containerQueriesFlat, spanCSS, spanMap, layerDivs, layerDivsJSX, allClasses, bannerMaps, banners };
+}
+
+// ── TERMS MODAL constants (shared across all generators) ─────────────────────
+const TERMS_MODAL_CSS = `
+.terms-modal { display: none; position: fixed; inset: 0; z-index: 2147483647; font-family: 'Montserrat', sans-serif; }
+.terms-modal.is-open { display: block; }
+.terms-modal__backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.55); }
+.terms-modal__dialog { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(92vw,900px); height: min(90vh,720px); background: #FFF; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); overflow: hidden; display: flex; flex-direction: column; }
+.terms-modal__header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; background: #FAF7F5; flex-shrink: 0; }
+.terms-modal__title { font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700; color: #132122; margin: 0; }
+.terms-modal__close { width: 32px; height: 32px; border: none; background: transparent; font-size: 24px; line-height: 1; cursor: pointer; color: #132122; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+.terms-modal__close:hover { background: rgba(0,0,0,.06); }
+.terms-modal__body { flex: 1; position: relative; min-height: 0; background: #FFF; }
+.terms-modal__frame { width: 100%; height: 100%; border: 0; display: block; }`;
+
+const TERMS_MODAL_HTML = `  <div id="terms-modal" class="terms-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="terms-modal-title">
+    <div class="terms-modal__backdrop" data-terms-close></div>
+    <div class="terms-modal__dialog" role="document">
+      <div class="terms-modal__header">
+        <h2 id="terms-modal-title" class="terms-modal__title">Terms &amp; Conditions</h2>
+        <button type="button" class="terms-modal__close" aria-label="Close" data-terms-close>&#xD7;</button>
+      </div>
+      <div class="terms-modal__body">
+        <iframe class="terms-modal__frame" title="Terms and Conditions" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+    </div>
+  </div>`;
+
+const TERMS_MODAL_HTML_JSX = TERMS_MODAL_HTML
+  .replace(/ class="/g, ' className="')
+  .replace(/aria-hidden="true"/g, 'aria-hidden="true"')
+  .replace(/for="/g, 'htmlFor="');
+
+const TERMS_MODAL_SCRIPT = `(function(){var m=document.getElementById('terms-modal');if(!m)return;var f=m.querySelector('.terms-modal__frame');function open(u){f.src=u;m.classList.add('is-open');m.setAttribute('aria-hidden','false');}function close(){m.classList.remove('is-open');m.setAttribute('aria-hidden','true');f.src='about:blank';}document.addEventListener('click',function(e){var l=e.target.closest&&e.target.closest('a[data-terms-link]');if(!l)return;e.preventDefault();open(l.href);});m.addEventListener('click',function(e){if(e.target&&e.target.hasAttribute&&e.target.hasAttribute('data-terms-close'))close();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.classList.contains('is-open'))close();});})();`;
+
+// ── React + CSS Modules ───────────────────────────────────────────────────────
+function generateReactCSSModules(banners) {
+  const { fontImport, baseLayerCSSFlat, containerQueriesFlat, spanCSS, layerDivsJSX } = buildBannerAssets(banners);
+
+  const jsx = `import React from 'react';
+import styles from './Banner.module.css';
+
+/**
+ * Responsive Banner Component — React + CSS Modules
+ * Generated by Banner Generator from Figma.
+ *
+ * Usage:
+ *   import Banner from './Banner';
+ *   <Banner />
+ *
+ * The banner scales smoothly using CSS container queries.
+ * Place it inside any container — it fills 100% width.
+ */
+export default function Banner() {
+  return (
+    <div className={styles['bc-outer']}>
+      <div className={styles.bc}>
+        <div className={styles.bv}>
+${layerDivsJSX.replace(/ className="(l-[^"]+)"/g, (m, cls) => ` className={styles['${cls}']}`)}
+        </div>
+      </div>
+${TERMS_MODAL_HTML_JSX.replace(/ class="([^"]+)"/g, (m, cls) => ` className={styles['${cls}']}`).replace(/id="terms-modal"/g, 'id="terms-modal"')}
+    </div>
+  );
+}
+`;
+
+  const css = `${fontImport}
+
+/* ── Container ─────────────────────────────────────── */
+.bc-outer {
+  container-type: inline-size;
+  container-name: bco;
+  width: 100%;
+}
+
+.bc {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.bv {
+  position: absolute;
+  top: 0; left: 0;
+  transform-origin: top left;
+  overflow: hidden;
+}
+
+/* ── Layer base ────────────────────────────────────── */
+${baseLayerCSSFlat}
+
+/* ── Responsive breakpoints (@container) ───────────── */
+${containerQueriesFlat}
+
+/* ── Text span styles ──────────────────────────────── */
+${spanCSS}
+
+/* ── Terms modal ───────────────────────────────────── */
+${TERMS_MODAL_CSS}
+`;
+
+  return [
+    { name: 'Banner.jsx', content: jsx },
+    { name: 'Banner.module.css', content: css },
+    { name: 'README.md', content: `# Banner Component — React + CSS Modules\n\n## Setup\n\nCopy \`Banner.jsx\` and \`Banner.module.css\` into your React project.\n\n\`\`\`jsx\nimport Banner from './Banner';\n\nexport default function App() {\n  return <Banner />;\n}\n\`\`\`` },
+  ];
+}
+
+// ── React + Tailwind ──────────────────────────────────────────────────────────
+function generateReactTailwind(banners) {
+  const { fontImport, containerQueriesFlat, spanCSS, layerDivsJSX, allClasses } = buildBannerAssets(banners);
+
+  // Layers get Tailwind utilities for base styles; positions come from companion CSS
+  const layerDivsTW = layerDivsJSX.replace(
+    / className="(l-[^"]+)"/g,
+    (m, cls) => ` className="absolute box-border ${cls}"`
+  );
+
+  const jsx = `import React from 'react';
+import './banner.css';
+
+/**
+ * Responsive Banner Component — React + Tailwind CSS
+ * Generated by Banner Generator from Figma.
+ *
+ * Requirements:
+ *   - Tailwind CSS v3+ configured in your project
+ *   - banner.css imported (handles @container responsive layout)
+ *
+ * Usage:
+ *   import Banner from './Banner';
+ *   <Banner />
+ */
+export default function Banner() {
+  return (
+    <div className="relative w-full [container-type:inline-size] [container-name:bco]">
+      <div className="relative w-full overflow-hidden bc">
+        <div className="absolute top-0 left-0 origin-top-left overflow-hidden bv">
+${layerDivsTW}
+        </div>
+      </div>
+${TERMS_MODAL_HTML_JSX}
+    </div>
+  );
+}
+`;
+
+  const css = `${fontImport}
+
+/* ── @container responsive layout ─────────────────────
+   Pixel-precise positions from Figma — cannot be
+   expressed as Tailwind utilities without arbitrary
+   values for every property, so they live here.
+   ──────────────────────────────────────────────────── */
+
+/* Layer base positioning */
+${allClasses.map(cls => `.${cls} { position: absolute; box-sizing: border-box; }`).join('\n')}
+
+/* Responsive breakpoints */
+${containerQueriesFlat}
+
+/* Text span styles */
+${spanCSS}
+
+/* Terms modal */
+${TERMS_MODAL_CSS}
+`;
+
+  return [
+    { name: 'Banner.jsx', content: jsx },
+    { name: 'banner.css', content: css },
+    { name: 'README.md', content: `# Banner Component — React + Tailwind\n\n## Setup\n\n1. Copy \`Banner.jsx\` and \`banner.css\` into your project\n2. Make sure Tailwind CSS is configured\n3. Import and use:\n\n\`\`\`jsx\nimport Banner from './Banner';\n\nexport default function App() {\n  return <Banner />;\n}\n\`\`\`` },
+  ];
+}
+
+// ── React + Inline Styles ─────────────────────────────────────────────────────
+function generateReactInlineStyles(banners) {
+  // Build per-size layer data as plain JS objects
+  const sizesData = banners.map(b => {
+    const layerData = b.layers.map((l, idx) => {
+      const style = {
+        position: 'absolute',
+        boxSizing: 'border-box',
+        left: l.pos?.x ?? 0,
+        top: l.pos?.y ?? 0,
+        width: l.size?.w ?? 0,
+        height: l.size?.h ?? 0,
+        zIndex: idx,
+      };
+      if (l.opacity !== undefined && l.opacity !== 1) style.opacity = l.opacity;
+      if (l.borderRadius) style.borderRadius = l.borderRadius;
+      if (l.type !== 'TEXT' && !l.hasImage) {
+        if (l.gradient) style.background = gradientCSS(l.gradient);
+        else if (l.fill) style.background = l.fill;
+      }
+      if (l.type === 'TEXT') {
+        if (l.color) style.color = l.color;
+        if (l.fontSize) style.fontSize = l.fontSize;
+        if (l.fontWeight) style.fontWeight = l.fontWeight;
+        if (l.fontFamily) style.fontFamily = `'${l.fontFamily}', sans-serif`;
+        if (l.textAlign) style.textAlign = l.textAlign;
+        if (l.lineHeight) style.lineHeight = `${l.lineHeight}px`;
+        style.whiteSpace = 'pre-wrap';
+        style.overflow = 'hidden';
+        style.display = 'block';
+      }
+      if (l.hasImage && l.imageUrl) {
+        const fit = _vcTypes.has(l.type) ? 'contain' : 'cover';
+        style.backgroundImage = `url('${l.imageUrl}')`;
+        style.backgroundRepeat = 'no-repeat';
+        style.backgroundSize = fit;
+        style.backgroundPosition = 'center';
+      }
+      return { name: l.name, type: l.type, text: (l.type==='TEXT'?l.text:''), style };
+    });
+    return {
+      w: b.w, h: b.h,
+      background: b.rootFill || (b.rootGradient ? gradientCSS(b.rootGradient) : 'transparent'),
+      layers: layerData
+    };
+  });
+
+  const sizesJSON = JSON.stringify(sizesData, null, 2);
+
+  // Collect all font families
+  const allFontMap = {};
+  banners.forEach(b => Object.entries(buildFontMap(b.layers)).forEach(([f,ws]) => { if(!allFontMap[f]) allFontMap[f]=new Set(); ws.forEach(w=>allFontMap[f].add(w)); }));
+  const fontFamilies = Object.keys(allFontMap);
+  const fontHref = fontFamilies.length
+    ? `https://fonts.googleapis.com/css2?${fontFamilies.map(f=>`family=${f.replace(/ /g,'+')}:wght@300;400;500;600;700;800;900`).join('&')}&display=swap`
+    : '';
+
+  const jsx = `import { useRef, useEffect, useState } from 'react';
+
+/**
+ * Responsive Banner Component — React + Inline Styles
+ * Generated by Banner Generator from Figma.
+ *
+ * No CSS files required. Uses ResizeObserver to detect
+ * container width and switch between banner layouts.
+ *
+ * Usage:
+ *   import Banner from './Banner';
+ *   <Banner />
+${fontHref ? ` *\n * Add this to your <head>:\n *   <link rel="stylesheet" href="${fontHref}">` : ''}
+ */
+
+const BANNER_SIZES = ${sizesJSON};
+
+function getActiveSize(width) {
+  for (const size of BANNER_SIZES) {
+    if (width >= size.w) return size;
+  }
+  return BANNER_SIZES[BANNER_SIZES.length - 1];
+}
+
+export default function Banner() {
+  const containerRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(BANNER_SIZES[0].w);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerWidth(entry.contentRect.width);
+    });
+    ro.observe(containerRef.current);
+    setContainerWidth(containerRef.current.offsetWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  const active = getActiveSize(containerWidth);
+  const scale  = containerWidth / active.w;
+
+  return (
+    <div ref={containerRef} style={{ width: '100%', position: 'relative' }}>
+      <div style={{
+        position: 'relative',
+        overflow: 'hidden',
+        width: '100%',
+        height: active.h * scale,
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0,
+          width: active.w,
+          height: active.h,
+          background: active.background,
+          transform: \`scale(\${scale})\`,
+          transformOrigin: 'top left',
+          overflow: 'hidden',
+        }}>
+          {active.layers.map((layer, i) =>
+            layer.type === 'TEXT' ? (
+              <div
+                key={i}
+                style={layer.style}
+                dangerouslySetInnerHTML={{ __html: layer.text }}
+              />
+            ) : (
+              <div key={i} style={layer.style} />
+            )
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+`;
+
+  return [
+    { name: 'Banner.jsx', content: jsx },
+    { name: 'README.md', content: `# Banner Component — React + Inline Styles\n\nNo CSS file needed. Just copy \`Banner.jsx\` into your project and import it.\n\n${fontHref ? `Add this font link to your \`<head>\`:\n\`\`\`html\n<link rel="stylesheet" href="${fontHref}">\n\`\`\`\n\n` : ''}\`\`\`jsx\nimport Banner from './Banner';\n\nexport default function App() {\n  return <Banner />;\n}\n\`\`\`` },
+  ];
+}
+
+// ── Vue + CSS ─────────────────────────────────────────────────────────────────
+function generateVueCSS(banners) {
+  const { fontImport, baseLayerCSSFlat, containerQueriesFlat, spanCSS, layerDivs } = buildBannerAssets(banners);
+
+  const vue = `<template>
+  <div class="bc-outer">
+    <div class="bc">
+      <div class="bv">
+${layerDivs}
+      </div>
+    </div>
+${TERMS_MODAL_HTML}
+  </div>
+</template>
+
+<script setup>
+/**
+ * Responsive Banner Component — Vue 3 SFC
+ * Generated by Banner Generator from Figma.
+ *
+ * Usage:
+ *   import Banner from './Banner.vue';
+ *   <Banner />
+ *
+ * The banner is fully CSS-driven — no JavaScript needed
+ * for responsive behaviour (@container queries).
+ */
+<\/script>
+
+<style>
+${fontImport}
+
+/* ── Container ─────────────────────────────────────── */
+.bc-outer {
+  container-type: inline-size;
+  container-name: bco;
+  width: 100%;
+}
+
+.bc {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.bv {
+  position: absolute;
+  top: 0; left: 0;
+  transform-origin: top left;
+  overflow: hidden;
+}
+
+/* ── Layer base ────────────────────────────────────── */
+${baseLayerCSSFlat}
+
+/* ── Responsive breakpoints (@container) ───────────── */
+${containerQueriesFlat}
+
+/* ── Text span styles ──────────────────────────────── */
+${spanCSS}
+
+/* ── Terms modal ───────────────────────────────────── */
+${TERMS_MODAL_CSS}
+</style>
+`;
+
+  return [
+    { name: 'Banner.vue', content: vue },
+    { name: 'README.md', content: `# Banner Component — Vue + CSS\n\nCopy \`Banner.vue\` into your Vue 3 project and import it:\n\n\`\`\`vue\n<script setup>\nimport Banner from './Banner.vue';\n<\/script>\n\n<template>\n  <Banner />\n</template>\n\`\`\`` },
+  ];
+}
+
+function renderPreview(html, banners, layerCount, elapsed, files) {
+  const fmt = getFormat();
+  const isHTML = fmt === 'html';
+  const sizeList = banners.map(b => b.size).join(', ');
+  const fmtLabel = { html:'HTML + CSS', 'react-css':'React + CSS Modules', 'react-tailwind':'React + Tailwind', 'react-inline':'React + Inline Styles', vue:'Vue + CSS' }[fmt] || fmt;
+  const first = banners[0];
+
+  // ── Topbar: show pulse dot + size buttons + info button ──
+  const dot = document.getElementById('preview-dot');
+  if (dot) dot.style.display = '';
+
+  const controls = document.getElementById('topbar-controls');
+  if (controls) {
+    controls.innerHTML = isHTML
+      ? banners.map((b, i) =>
+          `<button class="size-btn${i===0?' active':''}" onclick="setPreviewSize(this,${b.w},${b.h})">${b.size}</button>`
+        ).join('')
+      : `<span style="font-size:11px;color:var(--text-muted);font-style:italic;">No live preview for ${fmtLabel}</span>`;
+  }
+
+  // ── Info popover content ──
+  const infoWrap = document.getElementById('info-wrap');
+  const infoPopover = document.getElementById('info-popover');
+  if (infoWrap) infoWrap.style.display = '';
+  if (infoPopover) {
+    infoPopover.innerHTML = [
+      ['Size', sizeList],
+      ['Layers', layerCount],
+      ['Format', fmtLabel],
+      ['Time', elapsed + 's'],
+    ].map(([k,v]) => `<div class="info-row"><span class="info-key">${k}</span><span class="info-val">${v}</span></div>`).join('');
+  }
+
+  // Wire up info button toggle (once)
+  const infoBtn = document.getElementById('info-btn');
+  if (infoBtn && !infoBtn._wired) {
+    infoBtn._wired = true;
+    infoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      infoBtn.classList.toggle('active');
+      infoPopover.classList.toggle('open');
+    });
+    document.addEventListener('click', () => {
+      infoBtn.classList.remove('active');
+      infoPopover.classList.remove('open');
+    });
+  }
+
+  // ── Preview content — always target .preview-content, never the whole panel ──
+  let panel = document.querySelector('.preview-content');
+  if (!panel) {
+    // Rebuild the expected structure if resetTool previously nuked it
+    const pp = document.getElementById('preview-panel');
+    panel = document.createElement('div');
+    panel.className = 'preview-content';
+    pp.appendChild(panel);
+  }
+
+  const displayFiles = files || (html ? [{ name: 'banner.html', content: html }] : []);
+  const codeTabs = displayFiles.filter(f => !f.name.endsWith('.md')).map((f, i) =>
+    `<button class="code-tab${i===0?' active':''}" onclick="switchCodeTab(this,${i})">${f.name}</button>`
   ).join('');
 
-  const first = banners[0];
   panel.innerHTML = `
-    <div class="metric-row">
-      <div class="metric"><div class="metric-label">Sizes</div><div class="metric-val" style="font-size:13px">${sizeList}</div></div>
-      <div class="metric"><div class="metric-label">Layers</div><div class="metric-val">${layerCount}</div></div>
-      <div class="metric"><div class="metric-label">Time</div><div class="metric-val">${elapsed}s</div></div>
-    </div>
+    ${isHTML ? `
     <div class="preview-card">
-      <div class="preview-toolbar">
-        <span>Preview</span>
-        ${sizeBtns}
-      </div>
       <div class="preview-wrap">
         <iframe id="preview" style="width:${first.w}px;height:${first.h}px;"></iframe>
       </div>
+    </div>` : ''}
+    <div class="code-viewer" style="display:block;">
+      <div class="code-tabs">${codeTabs}</div>
+      <pre class="code-panel" id="code-panel"></pre>
     </div>
-    <div class="code-block" id="code-block"></div>
   `;
 
-  document.getElementById('preview').srcdoc = html;
-  document.getElementById('code-block').textContent = html;
+  if (isHTML && html) document.getElementById('preview').srcdoc = html;
+
+  const codeFiles = displayFiles.filter(f => !f.name.endsWith('.md'));
+  if (codeFiles.length) document.getElementById('code-panel').textContent = codeFiles[0].content;
+}
+
+function switchCodeTab(btn, idx) {
+  document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const files = generatedFiles.length ? generatedFiles : (generatedHTML ? [{ name: 'banner.html', content: generatedHTML }] : []);
+  const codeFiles = files.filter(f => !f.name.endsWith('.md'));
+  const panel = document.getElementById('code-panel');
+  if (panel && codeFiles[idx]) panel.textContent = codeFiles[idx].content;
 }
 
 function setPreviewSize(btn, w, h) {
@@ -1370,35 +2607,80 @@ async function runPipeline() {
 
   if (!banners.length) { btn.disabled = false; return; }
 
-  setStatus('<div class="spinner"></div> Building responsive HTML…'); setProgress(3);
-  // Sort banner sizes largest→smallest for sensible media query fallback order
+  const fmt = getFormat();
+  const fmtLabel = { html:'HTML', 'react-css':'React + CSS Modules', 'react-tailwind':'React + Tailwind', 'react-inline':'React + Inline Styles', vue:'Vue + CSS' }[fmt] || fmt;
+  setStatus(`<div class="spinner"></div> Building ${fmtLabel}…`); setProgress(3);
   banners.sort((a, b) => b.w - a.w);
-  const html = banners.length === 1
-    ? generateBannerHTML(banners[0].layers, banners[0].rootFill, banners[0].rootGradient, banners[0].w, banners[0].h)
-    : generateResponsiveHTML(banners);
 
-  generatedHTML = html;
-  const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+  let html = '';
+  let files = [];
+
+  if (fmt === 'html') {
+    html = banners.length === 1
+      ? generateBannerHTML(banners[0].layers, banners[0].rootFill, banners[0].rootGradient, banners[0].w, banners[0].h)
+      : generateResponsiveHTML(banners);
+    files = [{ name: 'banner.html', content: html }];
+  } else if (fmt === 'react-css') {
+    files = generateReactCSSModules(banners);
+  } else if (fmt === 'react-tailwind') {
+    files = generateReactTailwind(banners);
+  } else if (fmt === 'react-inline') {
+    files = generateReactInlineStyles(banners);
+  } else if (fmt === 'vue') {
+    files = generateVueCSS(banners);
+  }
+
+  generatedHTML    = html;
+  generatedFiles   = files;
+  const elapsed    = ((Date.now() - t0) / 1000).toFixed(1);
   const totalLayers = banners.reduce((s, b) => s + b.layers.length, 0);
-  const sizeList = banners.map(b => b.size).join(', ');
-  renderPreview(html, banners, totalLayers, elapsed);
+  const sizeList   = banners.map(b => b.size).join(', ');
+
+  // Update download button label
+  const dlBtn = document.getElementById('btn-download');
+  if (dlBtn) dlBtn.querySelector('svg + *') ? null : null;
+  if (dlBtn) dlBtn.innerHTML = dlBtn.innerHTML.replace(/Download.*$/, fmt === 'html' ? 'Download .html' : 'Download .zip');
+
+  renderPreview(html, banners, totalLayers, elapsed, files);
   setProgress(4);
-  setStatus(`✓ Done! ${banners.length} size${banners.length>1?'s':''} (${sizeList}), ${totalLayers} layers`, 'success');
+  setStatus(`✓ Done! ${banners.length} size${banners.length>1?'s':''} (${sizeList}), ${totalLayers} layers — ${fmtLabel}`, 'success');
   document.getElementById('post-actions').style.display = 'block';
   btn.disabled = false;
 }
 
-function downloadHTML() {
-  if (!generatedHTML) return;
+async function handleDownload() {
+  const fmt = getFormat();
+  if (fmt === 'html' && generatedHTML) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([generatedHTML], { type: 'text/html' }));
+    a.download = 'banner.html'; a.click();
+    return;
+  }
+  if (!generatedFiles.length) return;
+  if (generatedFiles.length === 1) {
+    const f = generatedFiles[0];
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([f.content], { type: 'text/plain' }));
+    a.download = f.name; a.click();
+    return;
+  }
+  // Multi-file → ZIP
+  const zip = new JSZip();
+  generatedFiles.forEach(f => zip.file(f.name, f.content));
+  const blob = await zip.generateAsync({ type: 'blob' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([generatedHTML], { type: 'text/html' }));
-  a.download = 'banner.html'; a.click();
+  a.href = URL.createObjectURL(blob);
+  a.download = 'banner-component.zip'; a.click();
 }
 
-function copyHTML() {
-  if (!generatedHTML) return;
-  navigator.clipboard.writeText(generatedHTML).then(() => {
-    setStatus('✓ Copied!', 'success');
+function handleCopy() {
+  const fmt = getFormat();
+  // Copy primary file (first non-README)
+  const files = generatedFiles.length ? generatedFiles : (generatedHTML ? [{ name: 'banner.html', content: generatedHTML }] : []);
+  const primary = files.find(f => !f.name.endsWith('.md')) || files[0];
+  if (!primary) return;
+  navigator.clipboard.writeText(primary.content).then(() => {
+    setStatus(`✓ Copied ${primary.name}!`, 'success');
   });
 }
 
@@ -1415,11 +2697,27 @@ function resetTool() {
     <button class="btn-remove" onclick="removeUrl(this)" title="Remove">✕</button>
   </div>`;
   // Keep the token — user shouldn't have to re-enter it every time
-  document.getElementById('preview-panel').innerHTML = `<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><p>Banner preview will appear here</p><small>Fill in the form on the right → click Generate</small></div>`;
+  // Reset preview content only — preserve the topbar structure
+  const previewContent = document.querySelector('.preview-content');
+  if (previewContent) {
+    previewContent.innerHTML = `<div class="empty-state">
+      <div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg></div>
+      <p>Banner preview will appear here</p>
+      <small>Paste your Figma URLs → click Generate</small>
+    </div>`;
+  }
+  // Reset topbar back to idle state
+  const dot = document.getElementById('preview-dot'); if (dot) dot.style.display = 'none';
+  const ctrl = document.getElementById('topbar-controls'); if (ctrl) ctrl.innerHTML = '';
+  const iw = document.getElementById('info-wrap'); if (iw) iw.style.display = 'none';
+  const ib = document.getElementById('info-btn'); if (ib) { ib.classList.remove('active'); ib._wired = false; }
+  const ip = document.getElementById('info-popover'); if (ip) { ip.classList.remove('open'); ip.innerHTML = ''; }
+  const tsub = document.querySelector('.preview-topbar-sub'); if (tsub) tsub.textContent = 'Paste a Figma URL and click Generate';
   document.getElementById('post-actions').style.display = 'none';
-  generatedHTML = ''; codeVisible = false;
+  generatedHTML = ''; generatedFiles = []; codeVisible = false;
   setProgress(1); setStatus('');
   document.getElementById('generate-btn').disabled = false;
+  updateGenerateBtn();
 }
 
 (async () => {

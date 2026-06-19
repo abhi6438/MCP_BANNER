@@ -34,7 +34,7 @@ async function processBannerUrl(url, token) {
 
 export function useBannerGenerator() {
   const [urls, setUrls] = useState(['']);
-  const [token, setTokenState] = useState(() => localStorage.getItem('figma_token') || '');
+  const [token, setTokenState] = useState('');
   const [format, setFormat] = useState('html');
   const [status, setStatus] = useState({ msg: '', type: '' });
   const [progress, setProgress] = useState(1);
@@ -45,7 +45,6 @@ export function useBannerGenerator() {
 
   const setToken = useCallback((val) => {
     setTokenState(val);
-    if (val) localStorage.setItem('figma_token', val);
   }, []);
 
   const addUrl = useCallback(() => setUrls(u => [...u, '']), []);

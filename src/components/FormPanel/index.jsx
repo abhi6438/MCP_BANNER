@@ -66,6 +66,7 @@ export default function FormPanel({
             placeholder="figd_…"
             value={token}
             onChange={e => onTokenChange(e.target.value)}
+            autoComplete="new-password"
           />
           <div className="hint">
             Get it at <a href="https://www.figma.com/settings" target="_blank" rel="noopener">figma.com/settings</a> → Personal access tokens

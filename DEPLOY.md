@@ -14,13 +14,13 @@ vercel login
 
 ## Deploy
 
-From inside the `banner-generator` folder:
+From inside the `code-generator` folder:
 ```bash
-cd "/Users/ashriva/Documents/New project/banner-generator"
+cd "/Users/ashriva/Documents/New project/code-generator"
 vercel
 ```
 
-Follow the prompts — accept all defaults. Vercel will give you a live URL like `https://banner-generator-xxxx.vercel.app`.
+Follow the prompts — accept all defaults. Vercel will give you a live URL like `https://code-generator-xxxx.vercel.app`.
 
 ## Set environment variables
 

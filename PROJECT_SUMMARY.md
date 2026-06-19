@@ -1,4 +1,4 @@
-# Banner Generator — Project Summary
+# Code Generator — Project Summary
 > Paste this file to Claude in VS Code (Cline/Continue) and say: "Read PROJECT_SUMMARY.md and continue from here"
 
 ---
@@ -12,7 +12,7 @@ A local Node.js tool that converts Figma banner designs into production-ready HT
 
 ## Project structure
 ```
-banner-generator/
+code-generator/
 ├── server.js           — Express server (AI proxy + Figma image fetcher)
 ├── public/
 │   └── index.html      — Frontend UI (split layout: preview left, form right)
@@ -132,6 +132,6 @@ Main flow: fetch Figma → extract → fetch images → generate → preview
 ## How to continue in VS Code
 1. Install **Cline** extension in VS Code (search "Cline" in Extensions)
 2. Add your Anthropic or Groq API key to Cline settings
-3. Open the `banner-generator` folder in VS Code
+3. Open the `code-generator` folder in VS Code
 4. Start a new Cline chat and say:
-   > "Read PROJECT_SUMMARY.md and continue improving the banner generator. Focus on [whatever you want next]."
+   > "Read PROJECT_SUMMARY.md and continue improving the code generator. Focus on [whatever you want next]."

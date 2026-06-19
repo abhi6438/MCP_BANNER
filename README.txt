@@ -1,4 +1,4 @@
-# Banner Generator — Setup
+# Code Generator — Setup
 
 ## One-time setup
 

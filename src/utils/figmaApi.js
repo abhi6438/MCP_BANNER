@@ -10,17 +10,30 @@ export function parseFigmaUrl(url) {
   } catch(e) { return null; }
 }
 
-export async function fetchFigmaData(fileKey, nodeId, token) {
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+export async function fetchFigmaData(fileKey, nodeId, token, retries = 3) {
   const base = 'https://api.figma.com/v1';
   const endpoint = nodeId
     ? `${base}/files/${fileKey}/nodes?ids=${encodeURIComponent(nodeId)}`
     : `${base}/files/${fileKey}`;
-  const res = await fetch(endpoint, { headers: { 'X-Figma-Token': token } });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error('Figma error ' + res.status + (err.err ? ': ' + err.err : ' — check your token'));
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetch(endpoint, { headers: { 'X-Figma-Token': token } });
+    if (res.status === 429) {
+      if (attempt < retries) {
+        const wait = Math.min(2000 * 2 ** attempt, 16000);
+        await sleep(wait);
+        continue;
+      }
+      throw new Error('Figma rate limit exceeded — please wait a moment and try again.');
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error('Figma error ' + res.status + (err.err ? ': ' + err.err : ' — check your token'));
+    }
+    return res.json();
   }
-  return res.json();
 }
 
 export async function fetchFigmaImages(fileKey, nodeIds, token) {

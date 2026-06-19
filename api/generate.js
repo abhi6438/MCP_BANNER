@@ -14,35 +14,66 @@ function extractSize(content, dim) {
   return dim === 'w' ? m[1] : m[2];
 }
 
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+async function fetchWithRetry(fn, maxRetries = 3) {
+  let lastErr;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const { res, data } = await fn();
+      if (res.status === 429) {
+        // Respect Retry-After header if present, else exponential backoff
+        const retryAfter = res.headers.get('retry-after');
+        const wait = retryAfter ? parseInt(retryAfter) * 1000 : Math.min(1000 * 2 ** attempt, 16000);
+        if (attempt < maxRetries) {
+          await sleep(wait);
+          continue;
+        }
+        throw new Error('Rate limit exceeded — please try again in a moment.');
+      }
+      return { res, data };
+    } catch (err) {
+      lastErr = err;
+      if (err.message.includes('Rate limit')) throw err;
+      if (attempt < maxRetries) await sleep(1000 * (attempt + 1));
+    }
+  }
+  throw lastErr;
+}
+
 async function callAI(messages) {
   const ai = detectAI();
   if (!ai) throw new Error('No API key found — add ANTHROPIC_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY to environment variables');
 
   if (ai === 'anthropic') {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8000, messages })
+    const { res, data } = await fetchWithRetry(async () => {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8000, messages })
+      });
+      return { res, data: await res.json() };
     });
-    const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'Anthropic error ' + res.status);
     return { html: data.content?.[0]?.text || '', ai: 'Claude (Anthropic)' };
   }
 
   if (ai === 'openai') {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({ model: 'gpt-4o', max_tokens: 8000, messages: messages.map(m => ({ role: m.role, content: m.content })) })
+    const { res, data } = await fetchWithRetry(async () => {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({ model: 'gpt-4o', max_tokens: 8000, messages: messages.map(m => ({ role: m.role, content: m.content })) })
+      });
+      return { res, data: await res.json() };
     });
-    const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'OpenAI error ' + res.status);
     return { html: data.choices?.[0]?.message?.content || '', ai: 'GPT-4o (OpenAI)' };
   }
@@ -81,26 +112,30 @@ async function callAI(messages) {
       return { ...m, content };
     });
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.GROQ_API_KEY}` },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 6000, messages: groqMessages.map(m => ({ role: m.role, content: m.content })) })
+    const { res, data } = await fetchWithRetry(async () => {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.GROQ_API_KEY}` },
+        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 6000, messages: groqMessages.map(m => ({ role: m.role, content: m.content })) })
+      });
+      return { res, data: await res.json() };
     });
-    const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'Groq error ' + res.status);
     return { html: data.choices?.[0]?.message?.content || '', ai: 'Llama 3.3 70B (Groq)' };
   }
 
   if (ai === 'gemini') {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
-        generationConfig: { maxOutputTokens: 8000 }
-      })
+    const { res, data } = await fetchWithRetry(async () => {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+          generationConfig: { maxOutputTokens: 8000 }
+        })
+      });
+      return { res, data: await res.json() };
     });
-    const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'Gemini error ' + res.status);
     return { html: data.candidates?.[0]?.content?.parts?.[0]?.text || '', ai: 'Gemini 1.5 Flash (Google)' };
   }
@@ -113,6 +148,7 @@ export default async function handler(req, res) {
     let html = result.html.replace(/^```html\n?/, '').replace(/\n?```$/, '').trim();
     res.json({ content: [{ text: html }], ai: result.ai });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    const isRateLimit = err.message.toLowerCase().includes('rate limit');
+    res.status(isRateLimit ? 429 : 500).json({ error: err.message });
   }
 }

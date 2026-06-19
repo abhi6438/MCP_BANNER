@@ -89,6 +89,8 @@ export function useBannerGenerator() {
     for (let i = 0; i < urls.length; i++) {
       const url = urls[i].trim();
       if (!url) continue;
+      // Small delay between requests to avoid Figma rate limits
+      if (i > 0) await new Promise(r => setTimeout(r, 500));
       setStatus({ msg: `Banner ${i + 1}/${trimmedUrls.length}: fetching from Figma…`, type: '' });
       setProgress(2);
       try {

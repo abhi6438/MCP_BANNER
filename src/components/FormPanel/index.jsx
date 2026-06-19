@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import UrlList from './UrlList.jsx';
 import FormatSelector from './FormatSelector.jsx';
 
@@ -9,11 +10,46 @@ const FORMAT_BTN_LABELS = {
   'vue': 'Generate Vue + CSS',
 };
 
+const TOKEN_STEPS = [
+  { n: 1, text: 'Go to', link: { label: 'figma.com/settings', href: 'https://www.figma.com/settings' } },
+  { n: 2, text: 'Scroll to Personal access tokens → click Generate new token' },
+  { n: 3, text: 'Give it any name (e.g. "Code Generator")' },
+  { n: 4, text: 'Under Scopes, enable file_content:read — Read the contents of and render images from files', highlight: 'file_content:read' },
+  { n: 5, text: 'Click Generate token and paste it here' },
+];
+
+function TokenGuide({ onClose }) {
+  return (
+    <div className="token-guide">
+      <div className="token-guide-header">
+        <span>How to get your Figma token</span>
+        <button className="token-guide-close" onClick={onClose} type="button">✕</button>
+      </div>
+      <ol className="token-guide-steps">
+        {TOKEN_STEPS.map(({ n, text, link, highlight }) => (
+          <li key={n}>
+            <span className="step-num">{n}</span>
+            <span className="step-text">
+              {link ? <>{text} <a href={link.href} target="_blank" rel="noopener">{link.label}</a></> : (
+                highlight
+                  ? <>{text.split(highlight)[0]}<code>{highlight}</code>{text.split(highlight)[1]}</>
+                  : text
+              )}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 export default function FormPanel({
   urls, sizeTags, token, format, status, progress, isGenerating, hasGenerated,
   onAddUrl, onRemoveUrl, onUpdateUrl, onTokenChange,
   onFormatChange, onGenerate, onDownload, onCopy, onReset,
 }) {
+  const [showGuide, setShowGuide] = useState(false);
+
   const progClass = (n) =>
     'prog-seg' + (n < progress ? ' done' : n === progress ? ' active' : '');
 
@@ -58,8 +94,25 @@ export default function FormPanel({
           onUpdate={onUpdateUrl}
         />
 
-        <div className="field">
-          <label>Figma Access Token</label>
+        <div className="field" style={{ position: 'relative' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            Figma Access Token
+            <button
+              type="button"
+              className="info-btn"
+              onClick={() => setShowGuide(v => !v)}
+              aria-label="How to get your Figma token"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="8.5" strokeWidth="3" strokeLinecap="round"/>
+                <line x1="12" y1="12" x2="12" y2="16" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </label>
+
+          {showGuide && <TokenGuide onClose={() => setShowGuide(false)} />}
+
           <input
             type="password"
             id="figma-token"
@@ -68,9 +121,6 @@ export default function FormPanel({
             onChange={e => onTokenChange(e.target.value)}
             autoComplete="new-password"
           />
-          <div className="hint">
-            Get it at <a href="https://www.figma.com/settings" target="_blank" rel="noopener">figma.com/settings</a> → Personal access tokens
-          </div>
         </div>
 
         <FormatSelector format={format} onChange={onFormatChange} />

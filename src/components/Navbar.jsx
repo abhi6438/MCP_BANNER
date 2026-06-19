@@ -14,8 +14,8 @@ export default function Navbar({ onOpenPanel }) {
       <div className="navbar-links">
         <a href="#" className="nav-link active" onClick={e => e.preventDefault()}>Home</a>
         <a href="#" className="nav-link" onClick={e => { e.preventDefault(); onOpenPanel('about'); }}>About</a>
-        <a href="#" className="nav-link" onClick={e => { e.preventDefault(); onOpenPanel('careers'); }}>Careers</a>
         <a href="#" className="nav-link" onClick={e => { e.preventDefault(); onOpenPanel('contact'); }}>Contact</a>
+        <a href="/privacy" className="nav-link">Privacy</a>
       </div>
       <div className="navbar-actions">
         <span className="nav-free-badge">

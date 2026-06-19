@@ -20,47 +20,13 @@ const PANEL_CONTENT = {
       </div>
     `
   },
-  careers: {
-    title: 'Careers',
-    html: `
-      <div class="slide-section">
-        <h3>Join our team</h3>
-        <p>We're a small, fully remote team building tools that developers and designers love. If you're passionate about bridging the design-to-code gap, we'd love to hear from you.</p>
-      </div>
-      <div class="slide-section">
-        <h3>Open roles</h3>
-        <div class="job-card">
-          <div class="job-title">Senior Frontend Engineer</div>
-          <div class="job-meta">Remote · Full-time</div>
-          <div class="job-badge">Hiring</div>
-        </div>
-        <div class="job-card">
-          <div class="job-title">UI/UX Designer</div>
-          <div class="job-meta">Remote · Full-time</div>
-          <div class="job-badge">Hiring</div>
-        </div>
-        <div class="job-card">
-          <div class="job-title">Developer Advocate</div>
-          <div class="job-meta">Remote · Contract</div>
-          <div class="job-badge">Hiring</div>
-        </div>
-      </div>
-      <div class="slide-section">
-        <h3>Interested?</h3>
-        <p>Send your resume and a note about what excites you to <a href="mailto:careers@codegenerator.io" style="color:var(--accent);">careers@codegenerator.io</a></p>
-      </div>
-    `
-  },
   contact: {
     title: 'Contact Us',
     html: `
       <div class="slide-section">
         <h3>Get in touch</h3>
         <p>Have a question, suggestion, or found a bug? We read every message and reply within 24 hours.</p>
-      </div>
-      <div class="slide-section" style="margin-top:24px;">
-        <h3>Other ways to reach us</h3>
-        <p>Email: <a href="mailto:hello@codegenerator.io" style="color:var(--accent);">hello@codegenerator.io</a></p>
+        <p style="margin-top:12px;">Use the feedback form or open a GitHub issue — we'll get back to you shortly.</p>
       </div>
     `
   }

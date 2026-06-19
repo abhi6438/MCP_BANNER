@@ -15,9 +15,8 @@ export default function Footer({ onOpenPanel }) {
       <div className="footer-links">
         <a href="#" className="footer-link">Home</a>
         <a href="#" className="footer-link" onClick={e => { e.preventDefault(); onOpenPanel('about'); }}>About</a>
-        <a href="#" className="footer-link" onClick={e => { e.preventDefault(); onOpenPanel('careers'); }}>Careers</a>
         <a href="#" className="footer-link" onClick={e => { e.preventDefault(); onOpenPanel('contact'); }}>Contact</a>
-        <a href="#" className="footer-link">Privacy</a>
+        <a href="/privacy" className="footer-link">Privacy</a>
       </div>
       <div className="footer-copyright">
         &copy; {new Date().getFullYear()} Code Generator &nbsp;&middot;&nbsp; Free Forever · AI-Powered · No Account Needed

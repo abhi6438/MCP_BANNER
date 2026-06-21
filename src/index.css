@@ -1281,3 +1281,73 @@ body { padding-bottom: 38px; }
     z-index: 200;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   MOBILE STEP FLOW
+   ═══════════════════════════════════════════════ */
+
+/* Mobile preview action bar — hidden on desktop */
+.mobile-preview-bar {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  /* Show only the active view */
+  .layout.mobile-form .preview-panel { display: none; }
+  .layout.mobile-preview .form-panel  { display: none; }
+
+  /* Mobile preview bar */
+  .mobile-preview-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .mobile-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 0;
+  }
+
+  .mobile-preview-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .mobile-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    padding: 6px 10px;
+    border-radius: 7px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .mobile-action-btn.danger {
+    color: var(--red);
+    border-color: #fca5a5;
+  }
+
+  .mobile-action-btn:active {
+    opacity: 0.7;
+  }
+}

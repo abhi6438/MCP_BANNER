@@ -182,15 +182,12 @@ export function generateResponsiveHTML(banners) {
       return `  .bv .${cls} { ${rules.join('; ')} }`;
     }).join('\n');
 
-    // Smallest size: fluid (scales down on narrow screens). Others: fixed at design px.
-    const sizeRule = isSmallest
-      ? `width: min(${b.w}px, 100%); aspect-ratio: ${b.w} / ${b.h};`
-      : `width: ${b.w}px; height: ${b.h}px;`;
-
+    // width: min(Wpx, 100%) — fills parent up to design width, never stretches wider.
+    // This is the key to no-zoom: at parent > design-width the banner stays at design-width.
+    // At parent < design-width it fills parent and scales proportionally (fluid on small screens).
     return `/* ${b.w}×${b.h} */
 @container bco${cond} {
-  .bc { ${sizeRule} ${bgRule} }
-  .bv { width: 100%; height: 100%; }
+  .bc { width: min(${b.w}px, 100%); aspect-ratio: ${b.w} / ${b.h}; ${bgRule} }
 ${layerCSS}
 }`;
   }).join('\n\n');
@@ -218,26 +215,37 @@ ${debugComment}
 -->
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: transparent; }
 
-/* Outer: container-query context for switching between sizes */
-.bc-outer {
+/*
+  body = outer container query context (bco).
+  Queries on "bco" style .bc from outside, so aspect-ratio/background
+  rules actually take effect (a container can't query itself).
+
+  .bc = fills 100% of whatever embeds this HTML (iframe, div, etc).
+  It also has its own container-type so 100cqi inside = .bc's width.
+  Since .bc is width:100%, 100cqi = parent container width — no fixed px caps.
+
+  Layers use calc(X / W * 100cqi) — fluid, no scale: transform.
+*/
+body {
   container-type: inline-size;
   container-name: bco;
-  width: 100%;
+  background: transparent;
+  margin: 0;
 }
 
-/* Inner: its own container-type so 100cqi = .bc width (= design width).
-   This prevents zoom: layers at calc(X/W*100cqi) always equal Xpx. */
 .bc {
   container-type: inline-size;
   position: relative;
   overflow: hidden;
+  width: 100%;
 }
 
 .bv {
   position: absolute;
   top: 0; left: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -251,11 +259,9 @@ ${TERMS_MODAL_CSS}
 </style>
 </head>
 <body>
-<div class="bc-outer">
-  <div class="bc">
-    <div class="bv">
+<div class="bc">
+  <div class="bv">
 ${layerDivs}
-    </div>
   </div>
 ${TERMS_MODAL_HTML}
 </div>

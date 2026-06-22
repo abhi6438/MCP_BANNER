@@ -58,6 +58,111 @@ export function inferRows(layers, containerW, containerH) {
 }
 
 /**
+ * Generate the inner HTML + CSS for one banner variant (no full document wrapper).
+ * Used by generateResponsiveHTML to embed multiple sizes.
+ *
+ * @param {object[]} layers
+ * @param {string}   rootFill
+ * @param {object}   rootGradient
+ * @param {number}   w  design width
+ * @param {number}   h  design height
+ * @param {string}   prefix  unique prefix for CSS classes (e.g. "b0", "b1")
+ * @param {function} regSpan  shared span-class registrar from caller
+ * @returns {{ html: string, bgCSS: string, bannerStyle: string }}
+ */
+export function generateFluidBannerSection(layers, rootFill, rootGradient, w, h, prefix, regSpan) {
+  const cqi = v => `calc(${(v / w * 100).toFixed(4)}cqi)`;
+  const pct = (v, base) => `${(v / base * 100).toFixed(3)}%`;
+
+  const { background: bgLayers, rows } = inferRows(layers, w, h);
+
+  let bgCSS = '';
+  if (rootGradient) bgCSS = gradientCSS(rootGradient);
+  else if (rootFill) bgCSS = rootFill;
+
+  const bgLayerCSS = bgLayers.map((l, i) => {
+    const styles = [
+      'position:absolute',
+      `left:${pct(l.pos.x, w)}`, `top:${pct(l.pos.y, h)}`,
+      `width:${pct(l.size.w, w)}`, `height:${pct(l.size.h, h)}`,
+    ];
+    if (l.gradient) styles.push(`background:${gradientCSS(l.gradient)}`);
+    else if (l.fill) styles.push(`background:${l.fill}`);
+    if (l.borderRadius) styles.push(`border-radius:${cqi(l.borderRadius)}`);
+    return `.${prefix}bg${i}{${styles.join(';')}}`;
+  }).join('\n');
+
+  const bgLayerHTML = bgLayers.map((l, i) =>
+    `<div class="${prefix}bg${i}">${layerInner(l, regSpan)}</div>`
+  ).join('\n');
+
+  let prevMaxY = 0;
+  const rowsHTML = rows.map(row => {
+    const rowH   = row.maxY - row.minY;
+    const gapTop = row.minY - prevMaxY;
+    prevMaxY     = row.maxY;
+
+    const rowLayers = row.layers;
+    const gaps = [];
+    for (let i = 1; i < rowLayers.length; i++) {
+      const prev = rowLayers[i - 1];
+      const curr = rowLayers[i];
+      gaps.push(Math.max(0, curr.pos.x - (prev.pos.x + prev.size.w)));
+    }
+    const gapBetween = gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0;
+    const paddingLeft = rowLayers.length ? rowLayers[0].pos.x : 0;
+
+    const rowStyle = [
+      'display:flex', 'align-items:center', 'flex-wrap:wrap',
+      `gap:${cqi(gapBetween)}`,
+      `padding-left:${cqi(paddingLeft)}`,
+      gapTop > 0 ? `margin-top:${cqi(gapTop)}` : '',
+      `min-height:${cqi(rowH)}`,
+    ].filter(Boolean).join(';');
+
+    const itemsHTML = rowLayers.map(l => {
+      const styles = [
+        `width:${cqi(l.size.w)}`, `height:${cqi(l.size.h)}`,
+        'flex-shrink:0', 'box-sizing:border-box',
+      ];
+      if (l.type !== 'TEXT' && !l.hasImage) {
+        if (l.gradient) styles.push(`background:${gradientCSS(l.gradient)}`);
+        else if (l.fill) styles.push(`background:${l.fill}`);
+      }
+      if (l.borderRadius) styles.push(`border-radius:${cqi(l.borderRadius)}`);
+      if (l.opacity !== undefined && l.opacity !== 1) styles.push(`opacity:${l.opacity}`);
+      if (l.clipsContent) styles.push('overflow:hidden');
+      if (l.type === 'TEXT') {
+        if (l.color)      styles.push(`color:${l.color}`);
+        if (l.fontSize)   styles.push(`font-size:${cqi(l.fontSize)}`);
+        if (l.fontWeight) styles.push(`font-weight:${l.fontWeight}`);
+        if (l.fontFamily) styles.push(`font-family:'${l.fontFamily}',sans-serif`);
+        if (l.textAlign)  styles.push(`text-align:${l.textAlign}`);
+        if (l.lineHeight) styles.push(`line-height:${cqi(l.lineHeight)}`);
+        styles.push('white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis');
+      }
+      return `<div style="${styles.join(';')}">${layerInner(l, regSpan)}</div>`;
+    }).join('');
+
+    return `<div style="${rowStyle}">${itemsHTML}</div>`;
+  });
+
+  const bannerStyle = [
+    'container-type:inline-size',
+    'width:100%',
+    `aspect-ratio:${w}/${h}`,
+    'position:relative',
+    'overflow:hidden',
+    'display:flex',
+    'flex-direction:column',
+    bgCSS ? `background:${bgCSS}` : '',
+  ].filter(Boolean).join(';');
+
+  const html = `<div class="${prefix}" style="${bannerStyle}">\n${bgLayerHTML}\n${rowsHTML.join('\n')}\n</div>`;
+  return { html, bgCSS: bgLayerCSS, bannerStyle };
+}
+
+/**
  * Generate fully fluid HTML using flex rows + cqi units.
  * No position:absolute — elements reflow naturally.
  */

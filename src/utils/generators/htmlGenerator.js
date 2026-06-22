@@ -1,4 +1,5 @@
 import { buildBannerAssets, generateBannerHTML, gradientCSS, layerRulesCSS, layerInner, buildFontMap, buildFontLink } from '../figmaParser.js';
+import { generateFluidBannerSection } from './fluidLayout.js';
 
 const _vcTypes = new Set(['VECTOR','BOOLEAN_OPERATION','STAR','POLYGON','COMPONENT','INSTANCE','GROUP']);
 
@@ -30,82 +31,15 @@ const TERMS_MODAL_HTML = `  <div id="terms-modal" class="terms-modal" aria-hidde
 const TERMS_MODAL_SCRIPT = `(function(){var m=document.getElementById('terms-modal');if(!m)return;var f=m.querySelector('.terms-modal__frame');function open(u){f.src=u;m.classList.add('is-open');m.setAttribute('aria-hidden','false');}function close(){m.classList.remove('is-open');m.setAttribute('aria-hidden','true');f.src='about:blank';}document.addEventListener('click',function(e){var l=e.target.closest&&e.target.closest('a[data-terms-link]');if(!l)return;e.preventDefault();open(l.href);});m.addEventListener('click',function(e){if(e.target&&e.target.hasAttribute&&e.target.hasAttribute('data-terms-close'))close();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.classList.contains('is-open'))close();});})();`;
 
 export function generateResponsiveHTML(banners) {
+  // Shared span map so common inline text styles get deduplicated across banners
   const spanMap = {};
-  function regSpan(decls) {
+  const regSpan = decls => {
     const key = decls.slice().sort().join(';');
     if (!spanMap[key]) spanMap[key] = `s${Object.keys(spanMap).length}`;
     return spanMap[key];
-  }
+  };
 
-  function sanitizeName(raw) {
-    return (raw || 'layer').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'layer';
-  }
-
-  function assignClasses(layers) {
-    const counts = {};
-    return layers.map(l => {
-      const base = 'l-' + sanitizeName(l.name);
-      counts[base] = (counts[base] || 0) + 1;
-      return counts[base] === 1 ? base : `${base}-${counts[base]}`;
-    });
-  }
-
-  const bannerClasses = banners.map(b => assignClasses(b.layers));
-  const masterClasses = bannerClasses[0];
-  const masterLayers  = banners[0].layers;
-
-  const normText  = t => t.toLowerCase().replace(/\s+/g, ' ').trim();
-  const alphaText = t => t.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 80);
-  const bannerMaps = banners.map((b, bi) => {
-    const byName = {}, byText = {}, byTextNorm = {}, byTextAlpha = {};
-    b.layers.forEach((l, i) => {
-      byName[bannerClasses[bi][i]] = l;
-      if (l.type === 'TEXT' && l.text) {
-        const key   = l.text.trim().slice(0, 120);
-        const norm  = normText(l.text).slice(0, 120);
-        const alpha = alphaText(l.text);
-        if (!byText[key])       byText[key]       = l;
-        if (!byTextNorm[norm])  byTextNorm[norm]  = l;
-        if (!byTextAlpha[alpha]) byTextAlpha[alpha] = l;
-      }
-    });
-    return { byName, byText, byTextNorm, byTextAlpha };
-  });
-
-  const masterTextSet      = new Set(masterLayers.filter(l => l.type === 'TEXT' && l.text).map(l => l.text.trim().slice(0, 120)));
-  const masterTextSetNorm  = new Set(masterLayers.filter(l => l.type === 'TEXT' && l.text).map(l => normText(l.text).slice(0, 120)));
-  const masterTextSetAlpha = new Set(masterLayers.filter(l => l.type === 'TEXT' && l.text).map(l => alphaText(l.text)));
-
-  const allClasses = [...masterClasses];
-  bannerClasses.slice(1).forEach((classes, si) => {
-    const bi = si + 1;
-    classes.forEach((cls, j) => {
-      if (allClasses.includes(cls)) return;
-      const l = banners[bi].layers[j];
-      if (l.type === 'TEXT' && l.text) {
-        const exact = l.text.trim().slice(0, 120);
-        const norm  = normText(l.text).slice(0, 120);
-        const alpha = alphaText(l.text);
-        if (masterTextSet.has(exact) || masterTextSetNorm.has(norm) || masterTextSetAlpha.has(alpha)) return;
-      }
-      allClasses.push(cls);
-    });
-  });
-
-  const extraLayerContent = {};
-  allClasses.forEach(cls => {
-    if (!bannerMaps[0].byName[cls]) {
-      bannerMaps.slice(1).find(m => m.byName[cls] && (extraLayerContent[cls] = m.byName[cls]));
-    }
-  });
-
-  const layerDivs = allClasses.map(cls => {
-    const l = bannerMaps[0].byName[cls] ?? extraLayerContent[cls];
-    if (!l) return '';
-    const inner = l.hasImage ? '' : layerInner(l, regSpan);
-    return `      <div class="${cls}">${inner}</div>`;
-  }).join('\n');
-
+  // Build combined font map across all banners
   const allFontMap = {};
   banners.forEach(b => {
     Object.entries(buildFontMap(b.layers)).forEach(([f, ws]) => {
@@ -115,86 +49,40 @@ export function generateResponsiveHTML(banners) {
   });
   const fontLink = buildFontLink(allFontMap);
 
-  const baseLayerCSS = allClasses.map(cls => `.bv .${cls} { position: absolute; box-sizing: border-box; }`).join('\n');
+  // Generate a separate flex-layout section for each banner size
+  const sections = banners.map((b, i) =>
+    generateFluidBannerSection(b.layers, b.rootFill, b.rootGradient, b.w, b.h, `b${i}`, regSpan)
+  );
 
-  const containerQueries = banners.map((b, i) => {
-    const larger    = i > 0 ? banners[i - 1].w : null;
+  // Container-query show/hide: banners sorted largest→smallest
+  // b0 shows at width >= b0.w, b1 shows at b1.w <= width < b0.w, etc.
+  // Default (no query): show b0, hide rest
+  const defaultVisibility = banners.map((_, i) =>
+    i === 0 ? `.b${i} { display: flex; }` : `.b${i} { display: none; }`
+  ).join('\n');
+
+  const showHideQueries = banners.map((b, i) => {
+    const larger     = i > 0 ? banners[i - 1].w : null;
     const isSmallest = i === banners.length - 1;
 
     let cond;
-    if (banners.length === 1) cond = '';
-    else if (!larger)         cond = ` (width >= ${b.w}px)`;
-    else if (isSmallest)      cond = ` (width < ${larger}px)`;
-    else                      cond = ` (${b.w}px <= width < ${larger}px)`;
+    if (!larger)      cond = `(width >= ${b.w}px)`;
+    else if (isSmallest) cond = `(width < ${larger}px)`;
+    else               cond = `(${b.w}px <= width < ${larger}px)`;
 
-    const map   = bannerMaps[i];
+    // When this size is active: show it, hide all others
+    const rules = banners.map((_, j) =>
+      j === i ? `  .b${j} { display: flex; }` : `  .b${j} { display: none; }`
+    ).join('\n');
 
-    let bgRule = '';
-    if (b.rootGradient) bgRule = `background: ${gradientCSS(b.rootGradient)};`;
-    else if (b.rootFill) bgRule = `background: ${b.rootFill};`;
-
-    const layerCSS = allClasses.map(cls => {
-      let l = map.byName[cls];
-      if (!l) {
-        const masterL = bannerMaps[0].byName[cls];
-        if (masterL?.type === 'TEXT' && masterL?.text) {
-          const key   = masterL.text.trim().slice(0, 120);
-          const norm  = normText(masterL.text).slice(0, 120);
-          const alpha = alphaText(masterL.text);
-          l = map.byText[key] || map.byTextNorm[norm] || map.byTextAlpha[alpha];
-        }
-      }
-      if (!l) return `  .bv .${cls} { display: none; }`;
-
-      let rules = layerRulesCSS(l, b.w).filter(r => !r.startsWith('position:') && !r.startsWith('box-sizing:'));
-      rules.unshift('display: block');
-
-      const masterL = bannerMaps[0].byName[cls];
-      if (masterL?.type === 'TEXT' && l.type !== 'TEXT') {
-        rules = rules.filter(r => !r.startsWith('background') && r !== 'overflow: hidden');
-        if (masterL.color)      rules.push(`color: ${masterL.color}`);
-        if (masterL.fontSize)   rules.push(`font-size: calc(${masterL.fontSize} / ${b.w} * 100cqi)`);
-        if (masterL.fontWeight) rules.push(`font-weight: ${masterL.fontWeight}`);
-        if (masterL.fontFamily) rules.push(`font-family: '${masterL.fontFamily}', sans-serif`);
-        if (masterL.textAlign)  rules.push(`text-align: ${masterL.textAlign}`);
-        rules.push('white-space: pre-wrap');
-      }
-
-      const zIdx = banners[i].layers.indexOf(l);
-      if (zIdx >= 0) rules.push(`z-index: ${zIdx}`);
-
-      if (l.hasImage && l.imageUrl) {
-        const fit = _vcTypes.has(l.type) ? 'contain' : 'cover';
-        rules.push(`background-image: url('${l.imageUrl}')`);
-        rules.push('background-repeat: no-repeat');
-        rules.push(`background-size: ${fit}`);
-        rules.push('background-position: center');
-      }
-
-      return `  .bv .${cls} { ${rules.join('; ')} }`;
-    }).join('\n');
-
-    return `/* ${b.w}×${b.h} */\n@container bco${cond} {\n  .bc { aspect-ratio: ${b.w} / ${b.h}; ${bgRule} }\n  .bv { width: 100%; height: 100%; }\n${layerCSS}\n}`;
+    return `@container bco ${cond} {\n${rules}\n}`;
   }).join('\n\n');
 
   const spanCSS = Object.entries(spanMap).map(([decls, cls]) => `.${cls} { ${decls} }`).join('\n');
 
-  const debugComment = banners.map((b, i) => {
-    const map = bannerMaps[i];
-    const pairs = allClasses.map(cls => {
-      const byName = map.byName[cls];
-      if (byName) return `  ${cls} ✓name "${byName.name || '?'}"`;
-      const masterL = bannerMaps[0].byName[cls];
-      if (masterL?.type === 'TEXT' && masterL?.text) {
-        const key  = masterL.text.trim().slice(0, 120);
-        const norm = normText(masterL.text).slice(0, 120);
-        if (map.byText[key])      return `  ${cls} ✓text "${map.byText[key].name || '?'}"`;
-        if (map.byTextNorm[norm]) return `  ${cls} ✓norm "${map.byTextNorm[norm].name || '?'}"`;
-      }
-      return `  ${cls} ✗hidden`;
-    }).join('\n');
-    return `Banner ${i} (${b.w}×${b.h}):\n${pairs}`;
-  }).join('\n\n');
+  const bgCSS = sections.map(s => s.bgCSS).filter(Boolean).join('\n');
+
+  const sectionHTML = sections.map(s => s.html).join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -202,35 +90,21 @@ export function generateResponsiveHTML(banners) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 ${fontLink}
-<!--
-LAYER CLASS DEBUG — view source to diagnose missing layers
-${debugComment}
--->
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: transparent; }
 
-.bc-outer {
+.bco {
   container-type: inline-size;
   container-name: bco;
   width: 100%;
 }
 
-.bc {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-}
+${defaultVisibility}
 
-.bv {
-  position: absolute;
-  top: 0; left: 0;
-  overflow: hidden;
-}
+${showHideQueries}
 
-${baseLayerCSS}
-
-${containerQueries}
+${bgCSS}
 
 ${spanCSS}
 
@@ -238,12 +112,8 @@ ${TERMS_MODAL_CSS}
 </style>
 </head>
 <body>
-<div class="bc-outer">
-  <div class="bc">
-    <div class="bv">
-${layerDivs}
-    </div>
-  </div>
+<div class="bco">
+${sectionHTML}
 ${TERMS_MODAL_HTML}
 </div>
 <script> ${TERMS_MODAL_SCRIPT} <\/script>

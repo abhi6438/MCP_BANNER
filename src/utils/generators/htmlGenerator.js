@@ -127,7 +127,6 @@ export function generateResponsiveHTML(banners) {
     else if (isSmallest)      cond = ` (width < ${larger}px)`;
     else                      cond = ` (${b.w}px <= width < ${larger}px)`;
 
-    const scale = `tan(atan2(100cqi, ${b.w}px))`;
     const map   = bannerMaps[i];
 
     let bgRule = '';
@@ -147,14 +146,14 @@ export function generateResponsiveHTML(banners) {
       }
       if (!l) return `  .bv .${cls} { display: none; }`;
 
-      let rules = layerRulesCSS(l).filter(r => !r.startsWith('position:') && !r.startsWith('box-sizing:'));
+      let rules = layerRulesCSS(l, b.w).filter(r => !r.startsWith('position:') && !r.startsWith('box-sizing:'));
       rules.unshift('display: block');
 
       const masterL = bannerMaps[0].byName[cls];
       if (masterL?.type === 'TEXT' && l.type !== 'TEXT') {
         rules = rules.filter(r => !r.startsWith('background') && r !== 'overflow: hidden');
         if (masterL.color)      rules.push(`color: ${masterL.color}`);
-        if (masterL.fontSize)   rules.push(`font-size: ${masterL.fontSize}px`);
+        if (masterL.fontSize)   rules.push(`font-size: calc(${masterL.fontSize} / ${b.w} * 100cqi)`);
         if (masterL.fontWeight) rules.push(`font-weight: ${masterL.fontWeight}`);
         if (masterL.fontFamily) rules.push(`font-family: '${masterL.fontFamily}', sans-serif`);
         if (masterL.textAlign)  rules.push(`text-align: ${masterL.textAlign}`);
@@ -175,7 +174,7 @@ export function generateResponsiveHTML(banners) {
       return `  .bv .${cls} { ${rules.join('; ')} }`;
     }).join('\n');
 
-    return `/* ${b.w}×${b.h} */\n@container bco${cond} {\n  .bc { height: calc(${scale} * ${b.h}px); ${bgRule} }\n  .bv { width: ${b.w}px; height: ${b.h}px; scale: ${scale}; }\n${layerCSS}\n}`;
+    return `/* ${b.w}×${b.h} */\n@container bco${cond} {\n  .bc { aspect-ratio: ${b.w} / ${b.h}; ${bgRule} }\n  .bv { width: 100%; height: 100%; }\n${layerCSS}\n}`;
   }).join('\n\n');
 
   const spanCSS = Object.entries(spanMap).map(([decls, cls]) => `.${cls} { ${decls} }`).join('\n');
@@ -226,7 +225,6 @@ body { background: transparent; }
 .bv {
   position: absolute;
   top: 0; left: 0;
-  transform-origin: top left;
   overflow: hidden;
 }
 

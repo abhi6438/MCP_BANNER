@@ -1,3 +1,5 @@
+import { generateFluidBannerHTML } from './generators/fluidLayout.js';
+
 const WEB_SAFE_FONTS = new Set([
   'Arial','Helvetica','Georgia','Times New Roman','Courier New',
   'Verdana','Tahoma','Trebuchet MS','Impact','Comic Sans MS'
@@ -348,93 +350,7 @@ export function layerInner(l, regSpan) {
 }
 
 export function generateBannerHTML(layers, rootFill, rootGradient, w, h) {
-  const fontMap = buildFontMap(layers);
-  const fontLink = buildFontLink(fontMap);
-
-  const spanMap = {};
-  function regSpan(decls) {
-    const key = decls.slice().sort().join(';');
-    if (!spanMap[key]) spanMap[key] = `s${Object.keys(spanMap).length}`;
-    return spanMap[key];
-  }
-
-  const layerHTML = layers.map((l, i) =>
-    `  <div class="l${i}">${layerInner(l, regSpan)}</div>`
-  ).join('\n');
-
-  let bgRule = '';
-  if (rootGradient) bgRule = `background: ${gradientCSS(rootGradient)};`;
-  else if (rootFill) bgRule = `background: ${rootFill};`;
-
-  const layerCSS = layers.map((l, i) => `.l${i} { ${layerRulesCSS(l, w).join('; ')} }`).join('\n');
-  const spanCSS  = Object.entries(spanMap).map(([k, cls]) => `.${cls} { ${k} }`).join('\n');
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-${fontLink}
-<!-- fonts: ${Object.keys(fontMap).join(', ') || 'web-safe only'} -->
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: transparent; }
-
-.bc-outer {
-  container-type: inline-size;
-  container-name: bco;
-  width: 100%;
-}
-
-.bc {
-  width: 100%;
-  aspect-ratio: ${w} / ${h};
-  position: relative;
-  overflow: hidden;
-  ${bgRule}
-}
-
-.bc > div { position: absolute; box-sizing: border-box; }
-
-${layerCSS}
-
-${spanCSS}
-
-.terms-modal {
-  display: none; position: fixed; inset: 0; z-index: 2147483647; font-family: 'Montserrat', sans-serif;
-}
-.terms-modal.is-open { display: block; }
-.terms-modal__backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.55); }
-.terms-modal__dialog { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(92vw,900px); height: min(90vh,720px); background: #FFF; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); overflow: hidden; display: flex; flex-direction: column; }
-.terms-modal__header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; background: #FAF7F5; flex-shrink: 0; }
-.terms-modal__title { font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700; color: #132122; margin: 0; }
-.terms-modal__close { width: 32px; height: 32px; border: none; background: transparent; font-size: 24px; line-height: 1; cursor: pointer; color: #132122; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
-.terms-modal__close:hover { background: rgba(0,0,0,.06); }
-.terms-modal__body { flex: 1; position: relative; min-height: 0; background: #FFF; }
-.terms-modal__frame { width: 100%; height: 100%; border: 0; display: block; }
-</style>
-</head>
-<body>
-<div class="bc-outer">
-  <div class="bc">
-${layerHTML}
-  </div>
-  <div id="terms-modal" class="terms-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="terms-modal-title">
-    <div class="terms-modal__backdrop" data-terms-close></div>
-    <div class="terms-modal__dialog" role="document">
-      <div class="terms-modal__header">
-        <h2 id="terms-modal-title" class="terms-modal__title">Terms &amp; Conditions</h2>
-        <button type="button" class="terms-modal__close" aria-label="Close" data-terms-close>&#xD7;</button>
-      </div>
-      <div class="terms-modal__body">
-        <iframe class="terms-modal__frame" title="Terms and Conditions" referrerpolicy="no-referrer-when-downgrade"></iframe>
-      </div>
-    </div>
-  </div>
-</div>
-<script> (function () { var modal = document.getElementById('terms-modal'); if (!modal) return; var iframe = modal.querySelector('.terms-modal__frame'); function openTermsModal(url) { iframe.setAttribute('src', url); modal.classList.add('is-open'); modal.setAttribute('aria-hidden', 'false'); } function closeTermsModal() { modal.classList.remove('is-open'); modal.setAttribute('aria-hidden', 'true'); iframe.setAttribute('src', 'about:blank'); } document.addEventListener('click', function (e) { var target = e.target; if (!target || typeof target.closest !== 'function') return; var link = target.closest('a[data-terms-link]'); if (!link) return; e.preventDefault(); openTermsModal(link.href); }); modal.addEventListener('click', function (e) { var t = e.target; if (t && t.nodeType === 1 && t.hasAttribute('data-terms-close')) closeTermsModal(); }); document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal.classList.contains('is-open')) closeTermsModal(); }); })(); <\/script>
-</body>
-</html>`;
+  return generateFluidBannerHTML(layers, rootFill, rootGradient, w, h);
 }
 
 export function buildBannerAssets(banners) {

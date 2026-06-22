@@ -37,10 +37,8 @@ body {
 
 .layout {
   display: grid;
-  grid-template-columns: clamp(280px, 30vw, 400px) 1fr;
+  grid-template-columns: 360px 1fr;
   align-items: start;
-  container-type: inline-size;
-  container-name: app-layout;
 }
 
 /* ── PREVIEW PANEL ── */
@@ -52,8 +50,6 @@ body {
   position: sticky;
   top: 0;
   max-height: 100vh;
-  container-type: inline-size;
-  container-name: preview;
 }
 
 .preview-topbar {
@@ -313,8 +309,6 @@ iframe#preview { border: none; display: block; border-radius: 2px; box-shadow: 0
   max-height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
-  container-type: inline-size;
-  container-name: form;
 }
 
 .form-header {
@@ -412,7 +406,7 @@ iframe#preview { border: none; display: block; border-radius: 2px; box-shadow: 0
 .prog-seg.done { background: var(--green); }
 
 /* Fields */
-.field { margin-bottom: 10px; }
+.field { margin-bottom: 10px; width: 100%; }
 
 label {
   display: block;
@@ -450,7 +444,7 @@ input:focus {
 .divider { height: 1px; background: var(--border); margin: 10px 0; }
 
 /* URL list */
-.url-list { display: flex; flex-direction: column; gap: 7px; }
+.url-list { display: flex; flex-direction: column; gap: 7px; width: 100%; }
 
 .url-row { display: flex; align-items: center; gap: 7px; }
 .url-row input { flex: 1; min-width: 0; }
@@ -530,7 +524,7 @@ input:focus {
   background: var(--border);
 }
 
-.format-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.format-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
 .format-opt { position: relative; }
 .format-opt input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
 
@@ -1123,34 +1117,6 @@ body { padding-bottom: 38px; }
   font-size: 11px;
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-weight: 600;
-}
-
-/* ═══════════════════════════════════════════════
-   CONTAINER-AWARE INTERNAL SIZING (cqi)
-   ═══════════════════════════════════════════════ */
-
-@container form (min-width: 1px) {
-  .form-body       { padding: 3.5cqi 5.5cqi; gap: 3cqi; }
-  .form-header     { padding: 4cqi 5.5cqi 3cqi; }
-  .form-footer     { padding: 3cqi 5.5cqi; }
-  label            { font-size: clamp(10px, 3cqi, 12px); }
-  .field           { margin-bottom: 2.5cqi; }
-  input[type="text"],
-  input[type="password"] {
-    padding: 2cqi 3cqi;
-    font-size: clamp(12px, 3.5cqi, 14px);
-    border-radius: clamp(6px, 2cqi, 10px);
-  }
-  .btn-generate    { padding: 3.5cqi 4cqi; font-size: clamp(12px, 3.5cqi, 15px); border-radius: clamp(8px, 2.5cqi, 12px); }
-  .format-grid     { gap: 2cqi; }
-  .format-opt      { padding: 2.5cqi 3cqi; border-radius: clamp(6px, 2cqi, 10px); }
-  .progress        { gap: 1.5cqi; margin-bottom: 3cqi; }
-  .hint            { font-size: clamp(10px, 2.8cqi, 11px); }
-}
-
-@container preview (min-width: 1px) {
-  .preview-topbar  { padding: 1.75cqi 3cqi; }
-  .preview-content { padding: 2.5cqi 3cqi; gap: 2cqi; }
 }
 
 /* ═══════════════════════════════════════════════

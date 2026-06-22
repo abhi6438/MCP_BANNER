@@ -333,7 +333,7 @@ export function layerRulesCSS(l, designWidth = null) {
     if (l.textOverflow === 'ellipsis')
       r.push('white-space: nowrap', 'overflow: hidden', 'text-overflow: ellipsis');
     else
-      r.push('white-space: pre-wrap', 'overflow: hidden');
+      r.push('white-space: pre-wrap', 'overflow: visible');
   }
   return r;
 }

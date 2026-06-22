@@ -217,21 +217,23 @@ ${debugComment}
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 /*
-  body = outer container query context (bco).
-  Queries on "bco" style .bc from outside, so aspect-ratio/background
-  rules actually take effect (a container can't query itself).
+  .bc-outer = outer container query context (bco).
+  Queries on "bco" style .bc from outside (a container can't query itself).
 
-  .bc = fills 100% of whatever embeds this HTML (iframe, div, etc).
-  It also has its own container-type so 100cqi inside = .bc's width.
-  Since .bc is width:100%, 100cqi = parent container width — no fixed px caps.
+  .bc has its own container-type so 100cqi inside = .bc's own width.
+  Container queries set .bc to min(DesignPx, 100%) — no zoom beyond design width.
 
-  Layers use calc(X / W * 100cqi) — fluid, no scale: transform.
+  Layers use calc(X / W * 100cqi) — fluid sizing, no scale: transform.
 */
 body {
-  container-type: inline-size;
-  container-name: bco;
   background: transparent;
   margin: 0;
+}
+
+.bc-outer {
+  container-type: inline-size;
+  container-name: bco;
+  width: 100%;
 }
 
 .bc {
@@ -259,10 +261,12 @@ ${TERMS_MODAL_CSS}
 </style>
 </head>
 <body>
+<div class="bc-outer">
 <div class="bc">
   <div class="bv">
 ${layerDivs}
   </div>
+</div>
 ${TERMS_MODAL_HTML}
 </div>
 <script> ${TERMS_MODAL_SCRIPT} <\/script>
